@@ -55,8 +55,8 @@ The `selected-window' after calling this function is used to open plot files.")
 (defvar ess-plot-placeholder-name "*R plot*"
   "Name of the placeholder plot buffer.")
 
-(defvar ess-plot--source-dir (file-name-directory (or load-file-name
-                                                     buffer-file-name))
+(defvar ess-plot--source-dir
+  (file-name-directory (file-truename (or load-file-name buffer-file-name)))
   "Directory containing ess-plot.el(c) and other source code.")
 
 (defvar ess-plot--process-name nil
