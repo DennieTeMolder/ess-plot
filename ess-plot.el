@@ -31,8 +31,10 @@
 ;; (i.e. `image-previous-file').
 ;;
 ;; Current limitations:
-;;  - Only implemented for the R dialect (help is welcome for others)
+;;  - After reloading the process the user needs to call `ess-plot-toggle'
+;;    twice to restore functionality
 ;;  - Can only be active for one process at a time
+;;  - Only implemented for the R dialect (help is welcome for others)
 ;;
 ;; Alternatives:
 ;; - httpgd (R package) & `xwidget-webkit-browse-url': This does provide a more
@@ -41,6 +43,7 @@
 ;;   be compiled with xwidget support and forces the user to install additional
 ;;   packages into their environment.
 ;;
+;; Development:
 ;; TODO handle `inferior-ess-reload'
 ;; TODO add Emacs cmd to change plot width/height
 ;;
