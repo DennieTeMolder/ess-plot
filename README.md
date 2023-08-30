@@ -3,6 +3,30 @@ Display ESS/R plots in a dedicated Emacs window
 
 ![image](https://github.com/DennieTeMolder/ess-plot/assets/51680200/5c387d64-53ea-468f-9b84-26fc6f256cb5)
 
+## Installation
+### Emacs
+Add the "ess-plot" folder to your `load-path`.
+
+### Straight
+Add the following to your `init.el`
+```emacs-lisp
+(use-package ess-plot
+  :straight (ess-plot :recipe (:host github :repo "DennieTeMolder/ess-plot"))
+  :defer t)
+```
+
+### Doom
+Add the following to your `package.el`:
+```emacs-lisp
+(package! ess-plot
+  :recipe (:host github :repo "DennieTeMolder/ess-plot"))
+```
+
+And add the following to your `config.el`
+```emacs-lisp
+(use-package! ess-plot :defer t)
+```
+
 ## Usage
 Call `M-x ess-plot-toggle` to start redirecting plots.
 Gg-plots should be redirected automatically, base-R plots require calling
