@@ -164,8 +164,9 @@ Only kill visible plot buffers if KILL-VISIBLE is t."
   "Display the .png file created by EVENT in `ess-plot-window'."
   (when (and (eq 'created (nth 1 event))
              (string= (file-name-extension (nth 2 event)) "png"))
-    (set-window-buffer (ess-plot--window-force)
-                       (find-file-noselect (nth 2 event)))
+    (save-selected-window
+      (select-window (ess-plot--window-force))
+      (find-file (nth 2 event)))
     (when (ess-plot-cleanup-buffers)
       (message "ESS-plot: updated plot"))))
 
