@@ -50,7 +50,7 @@ if (!file.exists(.ESS_PLOT_DIR.)) dir.create(.ESS_PLOT_DIR.)
 
 
 .ess_plot_check_opts <- function() {
-  stopifnot(is.numeric(unlist(options("plot.width", "plot.height", "plot.res"))))
+  stopifnot(is.numeric(unlist(base::options("plot.width", "plot.height", "plot.res"))))
   stopifnot(is.character(getOption("plot.units")))
 }
 
@@ -59,12 +59,12 @@ if (!file.exists(.ESS_PLOT_DIR.)) dir.create(.ESS_PLOT_DIR.)
     stop("There is already an open plotting device!")
 
   .ess_plot_check_opts()
-  args <- options("plot.width", "plot.height", "plot.units", "plot.res")
+  args <- base::options("plot.width", "plot.height", "plot.units", "plot.res")
   names(args) <- c("width", "height", "units", "res")
 
   filename <- tempfile(fileext = ".png")
   do.call(grDevices::png, c(list(filename = filename), args))
-  options(ess_plot.file = filename)
+  base::options(ess_plot.file = filename)
 
   if (!.ess_plot_is_current())
     stop("Failed to create a plotting device!")
@@ -84,7 +84,7 @@ if (!file.exists(.ESS_PLOT_DIR.)) dir.create(.ESS_PLOT_DIR.)
   }
 
   # Set options required for plotting
-  options(
+  base::options(
     "plot.width" = width,
     "plot.height" = height,
     "plot.units" = units,
@@ -129,6 +129,17 @@ dev.flush <- function(...) {
   }
 }
 
+options <- function(...) {
+  result <- base::options(...)
+  if (is.null(names(list(...))))
+    return(result)
+  # Reset the graphics device if plotting options were changed
+  if (any(names(result) %in% c("plot.width", "plot.height", "plot.units", "plot.res"))) {
+    .ess_plot_show()
+  }
+  invisible(result)
+}
+
 print.ggplot <- function (...) {
   res <- do.call(ggplot2:::print.ggplot, list(...))
   .ess_plot_show()
@@ -151,7 +162,7 @@ ggsave <- function(filename, ..., width = NA, height = NA,
   # Use plot options as fallback values
   if (.ess_plot_is_current()) {
     .ess_plot_check_opts()
-    plot_opts <- options("plot.width", "plot.height", "plot.units", "plot.res")
+    plot_opts <- base::options("plot.width", "plot.height", "plot.units", "plot.res")
     names(plot_opts) <- c("width", "height", "units", "dpi")
     args <- c(args, plot_opts[!names(plot_opts) %in% names(args)])
   }
