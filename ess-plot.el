@@ -94,7 +94,7 @@ Defaults to `ess-plot--process-name'."
 
 (defun ess-plot-file-p (file)
   "Return non-nil if FILE is an ESS plot."
-  (when ess-plot--dir (file-in-directory-p file ess-plot--dir)))
+  (when ess-plot--dir (string-prefix-p ess-plot--dir file)))
 
 (defun ess-plot-buffer-p (&optional buf)
   "Return BUF if it displays an ESS plot. Defaults to `current-buffer'."
