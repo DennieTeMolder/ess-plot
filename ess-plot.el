@@ -68,6 +68,10 @@ The `selected-window' after calling this function is used to open plot files.")
 (defvar ess-plot--descriptor nil
   "File notify descriptor watching the plot folder.")
 
+;; NOTE In Emacs29+ `file-notify-descriptors' is cleared when the dir is deleted
+(defvar ess-plot--dir nil
+  "Folder being watched by `ess-plot--descriptor'.")
+
 (defun ess-plot-loaded-p (&optional proc-name)
   "Non-nil if ESSR_plot is attached to PROC-NAME.
 Defaults to `ess-plot--process-name'."
@@ -86,20 +90,11 @@ Defaults to `ess-plot--process-name'."
   "Directory targeted by `ess-plot--process-name' to output plots."
   (when (ess-plot-loaded-p)
     (let ((ess-local-process-name ess-plot--process-name))
-      (car (ess-get-words-from-vector ".ESS_PLOT_DIR.\n")))))
-
-(defun ess-plot-descriptor-dir ()
-  "Directory watched by `ess-plot--descriptor'."
-  (when ess-plot--descriptor
-    (thread-last
-      (gethash ess-plot--descriptor file-notify-descriptors)
-      (file-notify--watch-directory)
-      (file-name-as-directory))))
+      (file-name-as-directory (car (ess-get-words-from-vector ".ESS_PLOT_DIR.\n"))))))
 
 (defun ess-plot-file-p (file)
   "Return non-nil if FILE is an ESS plot."
-  (when-let ((dir (ess-plot-descriptor-dir)))
-    (file-in-directory-p file dir)))
+  (when ess-plot--dir (file-in-directory-p file ess-plot--dir)))
 
 (defun ess-plot-buffer-p (&optional buf)
   "Return BUF if it displays an ESS plot. Defaults to `current-buffer'."
@@ -149,7 +144,7 @@ WINDOW, SIZE, and PIXELWISE are passed on to `split-window'"
         (if-let ((last-plot (ess-plot-file-last)))
             (find-file last-plot)
           (switch-to-buffer (generate-new-buffer ess-plot-placeholder-name))
-          (setq-local default-directory (ess-plot-process-dir)))
+          (setq-local default-directory ess-plot--dir))
         (selected-window))))
 
 (defun ess-plot-cleanup-buffers (&optional kill-visible)
@@ -181,23 +176,18 @@ Only kill visible plot buffers if KILL-VISIBLE is t."
                          #'ess-plot--file-notify-open))
 
 (defun ess-plot-sync ()
-  "Synchronise `ess-plot--descriptor' with `ess-plot-process-dir'."
-  (let ((plot-dir (ess-plot-process-dir))
-        (watch-dir (ess-plot-descriptor-dir)))
-    (cond ((and plot-dir watch-dir)
-           (if (string= plot-dir watch-dir)
-               (progn
-                 (ess-plot-cleanup-buffers 'kill-visible)
-                 (file-notify-rm-watch ess-plot--descriptor)
-                 (setq ess-plot--descriptor (ess-plot--watch-dir plot-dir)))
-             (ess-plot-cleanup-buffers))
-           ess-plot--descriptor)
-          (plot-dir
-           (setq ess-plot--descriptor (ess-plot--watch-dir plot-dir)))
-          (watch-dir
-           (ess-plot-cleanup-buffers 'kill-visible)
-           (file-notify-rm-watch ess-plot--descriptor)
-           (setq ess-plot--descriptor nil)))))
+  "Synchronise `ess-plot--dir' with `ess-plot-process-dir'."
+  (let ((proc-dir (ess-plot-process-dir)))
+    (if (and proc-dir ess-plot--dir (string= proc-dir ess-plot--dir))
+        (progn (ess-plot-cleanup-buffers) ess-plot--dir)
+      (when ess-plot--descriptor
+        (ess-plot-cleanup-buffers 'kill-visible)
+        (file-notify-rm-watch ess-plot--descriptor)
+        (setq ess-plot--descriptor nil
+              ess-plot--dir nil))
+      (when proc-dir
+        (setq ess-plot--descriptor (ess-plot--watch-dir proc-dir)
+              ess-plot--dir proc-dir)))))
 
 ;; REVIEW Can we add remote support like in `ess-r-load-ESSR'?
 (defun ess-plot--load ()
