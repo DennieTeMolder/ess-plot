@@ -187,8 +187,10 @@ Only kill visible plot buffers if KILL-VISIBLE is t."
         (setq ess-plot--descriptor nil
               ess-plot--dir nil))
       (when proc-dir
-        (setq ess-plot--descriptor (ess-plot--watch-dir proc-dir)
-              ess-plot--dir proc-dir)))))
+        (prog1
+            (setq ess-plot--descriptor (ess-plot--watch-dir proc-dir)
+                  ess-plot--dir proc-dir)
+          (ess-plot--window-force))))))
 
 ;; REVIEW Can we add remote support like in `ess-r-load-ESSR'?
 (defun ess-plot--load ()
@@ -205,7 +207,6 @@ Only kill visible plot buffers if KILL-VISIBLE is t."
                     ess-current-process-name))
       (setq ess-plot--process-name ess-current-process-name)))
   (ess-plot-sync)
-  (ess-plot--window-force)
   ess-plot--process-name)
 
 (defun ess-plot--unload ()
