@@ -200,7 +200,7 @@ Only kill visible plot buffers if KILL-VISIBLE is t."
     (unless (string= "R" (ess-get-process-variable 'ess-dialect))
       (user-error "ESS-plot currently only supports the 'R' dialect"))
     (let* ((r-src (expand-file-name "etc/ess-plot.R" ess-plot--source-dir))
-           (cmd (format "local(source('%s', local = new.env()))\n" r-src)))
+           (cmd (format "local(source('%s', local = TRUE))\n" r-src)))
       (ess-eval-linewise cmd "Attaching ESS-plot functions" nil nil 'wait-last-prompt)
       (unless (ess-plot-loaded-p ess-current-process-name)
         (user-error "ESS-plot: failed to load R code into process: %s"

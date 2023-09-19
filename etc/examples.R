@@ -1,5 +1,5 @@
 # For M-x ess-plot-load
-local(source('./ess-plot.R', local = new.env()))
+local(source('./ess-plot.R', local = TRUE))
 
 # Alternative if Emacs is compiled w/ xwidgets support (https://github.com/nx10/httpgd)
 ## httpgd::hgd()
