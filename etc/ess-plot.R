@@ -142,7 +142,9 @@ options <- function(...) {
 
 print.ggplot <- function (...) {
   res <- do.call(ggplot2:::print.ggplot, list(...))
-  .ess_plot_show()
+  if (.ess_plot_is_current()) {
+    .ess_plot_show()
+  }
   invisible(res)
 }
 
