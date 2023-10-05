@@ -54,6 +54,13 @@ if (!file.exists(.ESS_PLOT_DIR.)) dir.create(.ESS_PLOT_DIR.)
   stopifnot(is.character(getOption("plot.units")))
 }
 
+.ess_plot_pdf_sync_opts <- function() {
+  opts <- base::options("plot.width", "plot.height", "plot.units")
+  if (opts$plot.units == "in") {
+    grDevices::pdf.options(width = opts$plot.width, height = opts$plot.height)
+  }
+}
+
 .ess_plot_new <- function() {
   if (.ess_plot_is_current())
     stop("There is already an open plotting device!")
@@ -90,6 +97,7 @@ if (!file.exists(.ESS_PLOT_DIR.)) dir.create(.ESS_PLOT_DIR.)
     "plot.units" = units,
     "plot.res" = res
   )
+  .ess_plot_pdf_sync_opts()
 
   # Start initial device
   invisible(.ess_plot_new())
@@ -136,6 +144,9 @@ options <- function(...) {
   # Reset the graphics device if plotting options were changed
   if (any(names(result) %in% c("plot.width", "plot.height", "plot.units", "plot.res"))) {
     .ess_plot_show()
+    if (any(names(result) %in% c("plot.width", "plot.height"))) {
+      .ess_plot_pdf_sync_opts()
+    }
   }
   invisible(result)
 }
