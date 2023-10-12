@@ -48,7 +48,6 @@ if (!file.exists(.ESS_PLOT_DIR.)) dir.create(.ESS_PLOT_DIR.)
   .ess_plot_dev() == dev.cur()
 }
 
-
 .ess_plot_check_opts <- function() {
   stopifnot(is.numeric(unlist(base::options("plot.width", "plot.height", "plot.res"))))
   stopifnot(is.character(getOption("plot.units")))
@@ -126,7 +125,7 @@ if (!file.exists(.ESS_PLOT_DIR.)) dir.create(.ESS_PLOT_DIR.)
 
 ## Overrides ------
 # NOTE: All of the functions should retain their original functionality.
-# They should also keep working after dev.off() or when ESSR_plot is detached.
+# They should also keep working after dev.off() or when the ESSR_plot device is not active
 
 # NOTE used by M-x ess-plot-show
 dev.flush <- function(...) {
@@ -152,34 +151,31 @@ options <- function(...) {
 }
 
 print.ggplot <- function (...) {
-  res <- do.call(ggplot2:::print.ggplot, list(...))
+  result <- ggplot2:::print.ggplot(...)
   if (.ess_plot_is_current()) {
     .ess_plot_show()
   }
-  invisible(res)
+  invisible(result)
 }
 
-# REVIEW the arglist differs from ggplot2::ggsave()
-ggsave <- function(filename, ..., width = NA, height = NA,
-                   units = c("in", "cm", "mm", "px"), dpi = NA) {
-  # Merge user provided args
-  args <- list(filename = filename, ...)
-  if (!missing(width))
-    args$width <- width
-  if (!missing(height))
-    args$height <- height
-  if (!missing(units))
-    args$units <- units
-  if (!missing(dpi))
-    args$dpi <- dpi
-  # Use plot options as fallback values
-  if (.ess_plot_is_current()) {
+ggsave <- function(filename,
+                   plot = ggplot2::last_plot(),
+                   device = NULL,
+                   path = NULL,
+                   scale = 1,
+                   width = getOption("plot.width", NA),
+                   height = getOption("plot.height", NA),
+                   units = getOption("plot.units", "in"),
+                   dpi = getOption("plot.res", 300),
+                   limitsize = TRUE,
+                   bg = NULL,
+                   ...) {
+  if (.ess_plot_dev() > 0) {
     .ess_plot_check_opts()
-    plot_opts <- base::options("plot.width", "plot.height", "plot.units", "plot.res")
-    names(plot_opts) <- c("width", "height", "units", "dpi")
-    args <- c(args, plot_opts[!names(plot_opts) %in% names(args)])
   }
-  do.call(ggplot2::ggsave, args)
+  ggplot2::ggsave(filename = filename, plot = plot, device = device, path = path,
+                  scale = scale, width = width, height = height, units = units,
+                  dpi = dpi, limitsize = limitsize, bg = bg, ...)
 }
 
 ## Environment management ------
