@@ -141,11 +141,16 @@ WINDOW, SIZE, and PIXELWISE are passed on to `split-window'"
   (or (ess-plot-window)
       (save-selected-window
         (funcall ess-plot-window-create-function)
-        (if-let ((last-plot (ess-plot-file-last)))
-            (find-file last-plot)
-          (switch-to-buffer (generate-new-buffer ess-plot-placeholder-name))
-          (setq-local default-directory ess-plot--dir))
+        (switch-to-buffer (generate-new-buffer ess-plot-placeholder-name))
+        (setq-local default-directory ess-plot--dir)
         (selected-window))))
+
+(defun ess-plot--show-last ()
+  "Display `ess-plot-file-last' in `ess-plot-window' creating it if needed."
+  (when-let ((last-plot (ess-plot-file-last)))
+    (save-selected-window
+      (select-window (ess-plot--window-force))
+      (find-file last-plot))))
 
 (defun ess-plot-cleanup-buffers (&optional kill-visible)
   "Kill all unmodified buffers dedicated to ESS plot files.
@@ -190,7 +195,8 @@ Only kill visible plot buffers if KILL-VISIBLE is t."
         (prog1
             (setq ess-plot--descriptor (ess-plot--watch-dir proc-dir)
                   ess-plot--dir proc-dir)
-          (ess-plot--window-force))))))
+          (unless (ess-plot--show-last)
+            (ess-plot--window-force)))))))
 
 ;; REVIEW Can we add remote support like in `ess-r-load-ESSR'?
 (defun ess-plot--load ()
@@ -240,7 +246,8 @@ Only kill visible plot buffers if KILL-VISIBLE is t."
     (user-error "ESS-plot: not loaded in process '%s', call M-x ess-plot-toggle"
                 ess-current-process-name))
   (ess-eval-linewise "dev.flush()\n" nil nil nil 'wait-last-prompt)
-  (ess-plot--window-force))
+  (unless (ess-plot--show-last)
+    (user-error "ESS-plot: no plots to display")))
 
 (provide 'ess-plot)
 
