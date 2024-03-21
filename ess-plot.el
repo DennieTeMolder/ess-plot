@@ -141,7 +141,7 @@ WINDOW, SIZE, and PIXELWISE are passed on to `split-window'"
   (or (ess-plot-window)
       (save-selected-window
         (funcall ess-plot-window-create-function)
-        (switch-to-buffer (generate-new-buffer ess-plot-placeholder-name))
+        (switch-to-buffer (get-buffer-create ess-plot-placeholder-name))
         (setq-local default-directory ess-plot--dir)
         (selected-window))))
 
