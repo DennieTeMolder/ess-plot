@@ -58,6 +58,9 @@ The `selected-window' after calling this function is used to open plot files.")
 (defvar ess-plot-placeholder-name "*R plot*"
   "Name of the placeholder plot buffer.")
 
+(defvar ess-plot-buffer-modes '(image-mode dired-mode)
+  "Modes used by `ess-plot-buffer-p' to discern buffers managed by ess-plot.")
+
 (defvar ess-plot--source-dir
   (file-name-directory (file-truename (or load-file-name buffer-file-name)))
   "Directory containing ess-plot.el(c) and other source code.")
@@ -99,13 +102,30 @@ Defaults to `ess-plot--process-name'."
 (defun ess-plot-buffer-p (&optional buf)
   "Return BUF if it displays an ESS plot. Defaults to `current-buffer'."
   (or buf (setq buf (current-buffer)))
-  (when-let ((file (buffer-file-name buf)))
-    (when (ess-plot-file-p file) buf)))
+  (with-current-buffer buf
+    (and (equal ess-plot--dir (file-truename default-directory))
+         (cl-some #'derived-mode-p ess-plot-buffer-modes))))
 
 (defun ess-plot-buffers ()
   "Return a list of buffers associated with an ESS plot."
-  (delq nil (cons (get-buffer ess-plot-placeholder-name)
-                  (mapcar #'ess-plot-buffer-p (buffer-list)))))
+  (let (plot-bufs)
+    (dolist (buf (buffer-list) plot-bufs)
+      (when (ess-plot-buffer-p buf)
+        (push buf plot-bufs)))
+    (when-let ((placeholder (get-buffer ess-plot-placeholder-name)))
+      (cl-pushnew placeholder plot-bufs))
+    plot-bufs))
+
+(defun ess-plot-cleanup-buffers (&optional kill-visible)
+  "Kill all unmodified buffers dedicated to ESS plot files.
+The visible plot buffers are only killed if KILL-VISIBLE is t."
+  (dolist (buf (ess-plot-buffers))
+    (unless (buffer-modified-p buf)
+      (if-let ((win (get-buffer-window buf)))
+          (when kill-visible
+            (delete-window win)
+            (kill-buffer buf))
+        (kill-buffer buf)))))
 
 (defun ess-plot-file-last ()
   "The most recent plot outputted by `ess-plot-process-name."
@@ -151,19 +171,6 @@ WINDOW, SIZE, and PIXELWISE are passed on to `split-window'"
     (save-selected-window
       (select-window (ess-plot--window-force))
       (find-file last-plot))))
-
-(defun ess-plot-cleanup-buffers (&optional kill-visible)
-  "Kill all unmodified buffers dedicated to ESS plot files.
-Only kill visible plot buffers if KILL-VISIBLE is t."
-  (when-let ((bufs (ess-plot-buffers)))
-    (mapc (lambda (buf)
-            (unless (buffer-modified-p buf)
-              (if-let ((win (get-buffer-window buf)))
-                  (when kill-visible
-                    (delete-window win)
-                    (kill-buffer buf))
-                (kill-buffer buf))))
-          bufs)))
 
 (defun ess-plot--file-notify-open (event)
   "Display the .png file created by EVENT in `ess-plot-window'."
