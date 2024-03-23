@@ -109,7 +109,7 @@ Defaults to `ess-plot--process-name'."
 (defun ess-plot-buffers ()
   "Return a list of buffers associated with an ESS plot."
   (let (plot-bufs)
-    (dolist (buf (buffer-list) plot-bufs)
+    (dolist (buf (buffer-list))
       (when (ess-plot-buffer-p buf)
         (push buf plot-bufs)))
     (when-let ((placeholder (get-buffer ess-plot-placeholder-name)))
