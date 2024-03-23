@@ -1,10 +1,10 @@
 ;;; ess-plot.el --- Display ESS plots in a dedicated window -*- lexical-binding: t; -*-
-;;;
-;; Copyright (C) 2023  Dennie te Molder
+;;
+;; Copyright (C) 2023-2024 Dennie te Molder
 
 ;; Author: Dennie te Molder
 ;; Created: 30-8-2023
-;; Version: 0.1.0
+;; Version: 0.1.1
 ;; URL: https://github.com/DennieTeMolder/ess-plot
 ;; Package-Requires: ((emacs "26.1") (ess "18.10.1"))
 ;; Keywords: tools ESS frames plot
@@ -51,6 +51,7 @@
 (require 'ess-inf)
 (require 'filenotify)
 
+;;* Variables
 (defvar ess-plot-window-create-function #'ess-plot-window-create-default
   "Function used to create the plot window if none is visible.
 The `selected-window' after calling this function is used to open plot files.")
@@ -75,6 +76,7 @@ The `selected-window' after calling this function is used to open plot files.")
 (defvar ess-plot--dir nil
   "Folder being watched by `ess-plot--descriptor'.")
 
+;;* Predicate functions
 (defun ess-plot-loaded-p (&optional proc-name)
   "Non-nil if ESSR_plot is attached to PROC-NAME.
 Defaults to `ess-plot--process-name'."
@@ -106,6 +108,7 @@ Defaults to `ess-plot--process-name'."
     (and (equal ess-plot--dir (file-truename default-directory))
          (cl-some #'derived-mode-p ess-plot-buffer-modes))))
 
+;;* Buffer management
 (defun ess-plot-buffers ()
   "Return a list of buffers associated with an ESS plot."
   (let (plot-bufs)
@@ -127,12 +130,7 @@ The visible plot buffers are only killed if KILL-VISIBLE is t."
             (kill-buffer buf))
         (kill-buffer buf)))))
 
-(defun ess-plot-file-last ()
-  "The most recent plot outputted by `ess-plot-process-name."
-  (when (ess-plot-loaded-p)
-    (let ((ess-local-process-name ess-plot--process-name))
-      (car (ess-get-words-from-vector ".ess_plot_file_last()\n")))))
-
+;;* Window management
 (defun ess-plot-window ()
   "Return the window currently displaying ESS plots."
   (cl-some #'get-buffer-window (ess-plot-buffers)))
@@ -165,6 +163,12 @@ WINDOW, SIZE, and PIXELWISE are passed on to `split-window'"
         (setq-local default-directory ess-plot--dir)
         (selected-window))))
 
+(defun ess-plot-file-last ()
+  "The most recent plot outputted by `ess-plot-process-name."
+  (when (ess-plot-loaded-p)
+    (let ((ess-local-process-name ess-plot--process-name))
+      (car (ess-get-words-from-vector ".ess_plot_file_last()\n")))))
+
 (defun ess-plot--show-last ()
   "Display `ess-plot-file-last' in `ess-plot-window' creating it if needed."
   (when-let ((last-plot (ess-plot-file-last)))
@@ -172,6 +176,7 @@ WINDOW, SIZE, and PIXELWISE are passed on to `split-window'"
       (select-window (ess-plot--window-force))
       (find-file last-plot))))
 
+;;* File watcher
 (defun ess-plot--file-notify-open (event)
   "Display the .png file created by EVENT in `ess-plot-window'."
   (when (and (eq 'created (nth 1 event))
@@ -188,6 +193,7 @@ WINDOW, SIZE, and PIXELWISE are passed on to `split-window'"
                          '(change)
                          #'ess-plot--file-notify-open))
 
+;;* State management
 (defun ess-plot-sync ()
   "Synchronise `ess-plot--dir' with `ess-plot-process-dir'."
   (let ((proc-dir (ess-plot-process-dir)))
@@ -234,6 +240,7 @@ WINDOW, SIZE, and PIXELWISE are passed on to `split-window'"
   (setq ess-plot--process-name nil)
   (ess-plot-sync))
 
+;;* User facing functions
 ;;;###autoload
 (defun ess-plot-toggle ()
   "Toggle displaying ESS plots."
