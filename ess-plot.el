@@ -105,7 +105,8 @@ Defaults to `ess-plot--process-name'."
   "Return BUF if it displays an ESS plot. Defaults to `current-buffer'."
   (or buf (setq buf (current-buffer)))
   (with-current-buffer buf
-    (and (equal ess-plot--dir (file-truename default-directory))
+    (and default-directory
+         (equal ess-plot--dir (file-truename default-directory))
          (cl-some #'derived-mode-p ess-plot-buffer-modes))))
 
 ;;* Buffer management
@@ -148,10 +149,11 @@ WINDOW, SIZE, and PIXELWISE are passed on to `split-window'"
              (split-window window size side pixelwise))))
 
 (defun ess-plot-window-create-default ()
-  "Use `ess-plot-split-window-rational' to split `ess-switch-to-ESS'."
-  (unless (eq (ess-get-process-buffer ess-plot--process-name)
-              (current-buffer))
-    (ess-switch-to-ESS nil))
+  "Use `ess-plot-split-window-rational' on the window of `ess-plot--process-name'.
+If it is not visible split the current window instead."
+  (when-let ((is-ess-proc (assoc ess-plot--process-name ess-process-name-list))
+             (win (get-buffer-window (ess-get-process-buffer ess-plot--process-name))))
+    (select-window win))
   (select-window (ess-plot-split-window-rational)))
 
 (defun ess-plot--window-force ()
@@ -198,18 +200,16 @@ WINDOW, SIZE, and PIXELWISE are passed on to `split-window'"
   "Synchronise `ess-plot--dir' with `ess-plot-process-dir'."
   (let ((proc-dir (ess-plot-process-dir)))
     (if (and proc-dir ess-plot--dir (string= proc-dir ess-plot--dir))
-        (progn (ess-plot-cleanup-buffers) ess-plot--dir)
+        (ess-plot-cleanup-buffers)
       (when ess-plot--descriptor
         (ess-plot-cleanup-buffers 'kill-visible)
         (file-notify-rm-watch ess-plot--descriptor)
         (setq ess-plot--descriptor nil
               ess-plot--dir nil))
       (when proc-dir
-        (prog1
-            (setq ess-plot--descriptor (ess-plot--watch-dir proc-dir)
-                  ess-plot--dir proc-dir)
-          (unless (ess-plot--show-last)
-            (ess-plot--window-force)))))))
+        (setq ess-plot--descriptor (ess-plot--watch-dir proc-dir)
+              ess-plot--dir proc-dir)))
+    ess-plot--dir))
 
 ;; REVIEW Can we add remote support like in `ess-r-load-ESSR'?
 (defun ess-plot--load ()
@@ -246,8 +246,10 @@ WINDOW, SIZE, and PIXELWISE are passed on to `split-window'"
   "Toggle displaying ESS plots."
   (interactive)
   (if (not ess-plot--process-name)
-      (progn (ess-plot--load)
-             (message "ESS-plot: started displaying plots"))
+      (progn
+        (ess-plot--load)
+        (unless (ess-plot--show-last) (ess-plot--window-force))
+        (message "ESS-plot: started displaying plots"))
     (ess-plot--unload)
     (message "ESS-plot: stopped displaying plots")))
 
