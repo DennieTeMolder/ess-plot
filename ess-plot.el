@@ -264,6 +264,12 @@ If it is not visible split the current window instead."
   (unless (ess-plot--show-last)
     (user-error "ESS-plot: no plots to display")))
 
+;;;###autoload
+(defun ess-plot-hide ()
+  "Hide the current plot window by killing it, also cleans-up all plot buffers."
+  (interactive)
+  (ess-plot-cleanup-buffers 'kill-visible))
+
 (provide 'ess-plot)
 
 ;;; ess-plot.el ends here
