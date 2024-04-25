@@ -124,11 +124,10 @@ Defaults to `ess-plot--process-name'."
   "Kill all unmodified buffers dedicated to ESS plot files.
 The visible plot buffers are only killed if KILL-VISIBLE is t."
   (dolist (buf (ess-plot-buffers))
-    (unless (buffer-modified-p buf)
-      (if-let ((win (get-buffer-window buf)))
-          (when kill-visible
-            (delete-window win)
-            (kill-buffer buf))
+    (let ((win (get-buffer-window buf)))
+      (and win kill-visible (delete-window win))
+      (unless (or (buffer-modified-p buf)
+                  (and win (not kill-visible)))
         (kill-buffer buf)))))
 
 ;;* Window management
