@@ -2,7 +2,7 @@
 ## Plotting ------
 # Directory to which finalized plots are moved, to trigger Emacs' filewatcher
 # NOTE used by M-x ess-plot-process-dir
-.ESS_PLOT_DIR. <- file.path(tempdir(check = TRUE), "session_plots")
+.ESS_PLOT_DIR. <- file.path(normalizePath(tempdir(check = TRUE)), "session_plots")
 if (!file.exists(.ESS_PLOT_DIR.)) dir.create(.ESS_PLOT_DIR.)
 
 .ess_plot_make_filename <- function(n) {

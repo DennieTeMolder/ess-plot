@@ -95,7 +95,8 @@ Defaults to `ess-plot--process-name'."
   "Directory targeted by `ess-plot--process-name' to output plots."
   (when (ess-plot-loaded-p)
     (let ((ess-local-process-name ess-plot--process-name))
-      (file-name-as-directory (car (ess-get-words-from-vector ".ESS_PLOT_DIR.\n"))))))
+      (file-truename (file-name-as-directory
+                      (car (ess-get-words-from-vector ".ESS_PLOT_DIR.\n")))))))
 
 (defun ess-plot-file-p (file)
   "Return non-nil if FILE is an ESS plot."
