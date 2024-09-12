@@ -7,7 +7,7 @@
 ;; Version: 0.1.2
 ;; URL: https://github.com/DennieTeMolder/ess-plot
 ;; Package-Requires: ((emacs "26.1") (ess "18.10.1"))
-;; Keywords: tools ESS frames plot
+;; Keywords: tools ESS R plot dedicated window
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
