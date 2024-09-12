@@ -104,7 +104,7 @@ if (!file.exists(.ESS_PLOT_DIR.)) dir.create(.ESS_PLOT_DIR.)
 
 .ess_plot_show <- function() {
   # Do noting if plots are not being redirected
-  if (.ess_plot_dev() == 0)
+  if (.ess_plot_dev() == 0L)
     return(invisible())
   if (!.ess_plot_is_current())
     stop("Currently redirecting plots, but the active device is not targeting the right file!")
@@ -136,6 +136,7 @@ dev.flush <- function(...) {
   }
 }
 
+# REVIEW replace w/ grDevices::pdf.options()
 options <- function(...) {
   result <- base::options(...)
   if (is.null(names(list(...))))
@@ -170,7 +171,7 @@ ggsave <- function(filename,
                    limitsize = TRUE,
                    bg = NULL,
                    ...) {
-  if (.ess_plot_dev() > 0) {
+  if (.ess_plot_dev() > 0L) {
     .ess_plot_check_opts()
   }
   ggplot2::ggsave(filename = filename, plot = plot, device = device, path = path,
@@ -234,7 +235,7 @@ ggsave <- function(filename,
 
   # Stop current plotting device if it is active
   which <- .ess_plot_dev()
-  if (which > 1) {
+  if (which > 1L) {
     if (which != dev.cur())
       warning("ESS-plot: device closed but another is still active.")
     dev.off(which)
