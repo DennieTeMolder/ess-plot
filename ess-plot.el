@@ -104,8 +104,7 @@ Defaults to `ess-plot--process-name'."
 
 (defun ess-plot-buffer-p (&optional buf)
   "Return BUF if it displays an ESS plot. Defaults to `current-buffer'."
-  (or buf (setq buf (current-buffer)))
-  (with-current-buffer buf
+  (with-current-buffer (or buf (current-buffer))
     (and default-directory
          (equal ess-plot--dir (file-truename default-directory))
          (cl-some #'derived-mode-p ess-plot-buffer-modes))))
