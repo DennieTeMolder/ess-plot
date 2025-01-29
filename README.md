@@ -11,7 +11,10 @@ Add the "ess-plot" folder to your `load-path`.
 Add the following to your `init.el`
 ```emacs-lisp
 (use-package ess-plot
-  :straight (ess-plot :recipe (:host github :repo "DennieTeMolder/ess-plot"))
+  :straight (ess-plot :type git
+                      :host github
+                      :repo "DennieTeMolder/ess-plot"
+                      :files ("*.el" "etc"))
   :defer t)
 ```
 
