@@ -1,6 +1,6 @@
 ;;; ess-plot.el --- Display ESS plots in a dedicated window -*- lexical-binding: t; -*-
 ;;
-;; Copyright (C) 2023-2024 Dennie te Molder
+;; Copyright (C) 2023-2025 Dennie te Molder
 
 ;; Author: Dennie te Molder
 ;; Created: 30-8-2023
@@ -23,12 +23,26 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;; Call M-x `ess-plot-toggle' to start redirecting plots.
-;; Gg-plots should be redirected automatically, base-R plots require calling
-;; 'dev.flush()' to push the plot to the window. If the plot window was closed
-;; call M-x `ess-plot-show' to redisplay the last plot. Plots are displayed in
-;; PNG format thus plot history can be navigated using `image-mode' bindings
-;; (i.e. `image-previous-file').
+;; Call M-x `ess-plot-toggle' to start redirecting plots. Gg-plots should be
+;; rendered automatically, but base-R plots require calling 'dev.flush()' in R
+;; to render the plot to the window. If the plot window was closed call M-x
+;; `ess-plot-show' to redisplay the last plot. Plots are displayed in PNG format
+;; thus plot history can be navigated using `image-mode' bindings (i.e.
+;; `image-previous-file'). Calling `ess-plot-toggle' again stops plots from
+;; being redirected and closes the plot window. You can customize how the plot
+;; window is created and positioned by changing `ess-plot-window-create-function'.
+;;
+;; Call M-x `ess-plot-toggle' to start redirecting plots. Gg-plots should be
+;; rendered automatically, but base-R plots require calling either M-x
+;; `ess-plot-show' in Emacs or 'dev.flush()' in R to render the plot to the
+;; window. If the plot window was closed, calling M-x `ess-plot-show' will cause
+;; the latest plot to be redisplayed. Plots are displayed in PNG format thus
+;; plot history can be navigated using `image-mode' bindings (i.e. M-x
+;; `image-previous-file'). Calling M-x `ess-plot-toggle' again stops plots from
+;; being redirected and closes the plot window. You can customize how the plot
+;; window is created and positioned by changing
+;; `ess-plot-window-create-function'. It is recommended to create bindings for
+;; `ess-plot-toggle', `ess-plot-show', and optionally `ess-plot-hide'.
 ;;
 ;; Current limitations:
 ;;  - After reloading the process the user needs to call `ess-plot-toggle'
@@ -64,7 +78,7 @@ The `selected-window' after calling this function is used to open plot files.")
 
 (defvar ess-plot--source-dir
   (file-name-directory (file-truename (or load-file-name buffer-file-name)))
-  "Directory containing ess-plot.el(c) and other source code.")
+  "Directory containing ess-plot.el(c) and the etc/ folder.")
 
 (defvar ess-plot--process-name nil
   "ESS process for which plots are currently being displayed.")
