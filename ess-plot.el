@@ -78,7 +78,7 @@ The `selected-window' after calling this function is used to open plot files.")
 
 (defvar ess-plot--source-dir
   (file-name-directory (file-truename (or load-file-name buffer-file-name)))
-  "Directory containing ess-plot.el(c) and the etc/ folder.")
+  "Directory containing ess-plot.el(c) and the dir/ folder.")
 
 (defvar ess-plot--process-name nil
   "ESS process for which plots are currently being displayed.")
@@ -231,7 +231,7 @@ If it is not visible split the current window instead."
     (ess-force-buffer-current)
     (unless (string= "R" (ess-get-process-variable 'ess-dialect))
       (user-error "ESS-plot currently only supports the 'R' dialect"))
-    (let* ((r-src (expand-file-name "etc/ess-plot.R" ess-plot--source-dir))
+    (let* ((r-src (expand-file-name "dir/ess-plot.R" ess-plot--source-dir))
            (cmd (format "local(source('%s', local = TRUE))\n" r-src)))
       (ess-eval-linewise cmd "Attaching ESS-plot functions" nil nil 'wait-last-prompt)
       (unless (ess-plot-loaded-p ess-current-process-name)
