@@ -35,12 +35,11 @@ If the plot window was closed, calling `M-x ess-plot-show` will cause the latest
 plot to be redisplayed. Plots are displayed in PNG format thus plot history can
 be navigated using `image-mode` bindings (i.e. `M-x image-previous-file`).
 Calling `M-x ess-plot-toggle` again stops plots from being redirected and closes
-the plot window. You can customize how the plot window is created and positioned
-by changing `ess-plot-window-create-function`. It is recommended to create
-bindings for `ess-plot-toggle`, `ess-plot-show`, and optionally `ess-plot-hide`.
+the plot window. It is recommended to create bindings for `ess-plot-toggle`,
+`ess-plot-show`, and optionally `ess-plot-hide`.
 
 You can change the resolution and size of the next plot from inside of R. 
-The code below restores the default setting:
+The code below restores the default settings:
 ```R
 options(
   plot.width = 7,
@@ -49,6 +48,12 @@ options(
   plot.res = 300
 )
 ```
+
+You can control if `ess-plot-toggle` will show immediately show the plot window
+(default) or only when the next plot is created (or `ess-plot-show` is called)
+by setting `ess-plot-window-show-on-startup` to `t` or `nil` respectively. You
+can customize how the plot window is created and positioned by changing
+`ess-plot-window-create-function`.
 
 ## Limitations
  - After reloading the process the user needs to call `ess-plot-toggle` twice to restore functionality

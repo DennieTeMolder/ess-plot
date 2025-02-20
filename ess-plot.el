@@ -39,10 +39,9 @@
 ;; the latest plot to be redisplayed. Plots are displayed in PNG format thus
 ;; plot history can be navigated using `image-mode' bindings (i.e. M-x
 ;; `image-previous-file'). Calling M-x `ess-plot-toggle' again stops plots from
-;; being redirected and closes the plot window. You can customize how the plot
-;; window is created and positioned by changing
-;; `ess-plot-window-create-function'. It is recommended to create bindings for
-;; `ess-plot-toggle', `ess-plot-show', and optionally `ess-plot-hide'.
+;; being redirected and closes the plot window. It is recommended to create
+;; bindings for `ess-plot-toggle', `ess-plot-show', and optionally
+;; `ess-plot-hide'.
 ;;
 ;; Current limitations:
 ;;  - After reloading the process the user needs to call `ess-plot-toggle'
@@ -58,6 +57,9 @@
 ;;   packages into their environment.
 ;;
 ;; Development:
+;; TODO coordinate file naming through Emacs
+;; TODO multi-process support
+;; TODO attach on startup
 ;; TODO handle `inferior-ess-reload'
 ;; TODO add Emacs cmd to change plot width/height
 ;;
@@ -66,6 +68,9 @@
 (require 'filenotify)
 
 ;;* Variables
+(defvar ess-plot-window-show-on-startup t
+  "Controls weather `ess-plot-toggle' will trigger `ess-plot-show'.")
+
 (defvar ess-plot-window-create-function #'ess-plot-window-create-default
   "Function used to create the plot window if none is visible.
 The `selected-window' after calling this function is used to open plot files.")
@@ -261,7 +266,8 @@ If it is not visible split the current window instead."
   (if (not ess-plot--process-name)
       (progn
         (ess-plot--load)
-        (unless (ess-plot--show-last) (ess-plot--window-force))
+        (when ess-plot-window-show-on-startup
+          (unless (ess-plot--show-last) (ess-plot--window-force)))
         (message "ESS-plot: started displaying plots"))
     (ess-plot--unload)
     (message "ESS-plot: stopped displaying plots")))
