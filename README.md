@@ -5,14 +5,22 @@ Display ESS/R plots in a dedicated Emacs window
 
 ## Installation
 ### Emacs
-Add the "ess-plot" folder to your `load-path`.
+Add the "ess-plot" folder to your `load-path`. 
+
+To enable ESS-plot in all R processes add the following to our `init.el`:
+```emacs-lisp
+(add-hook 'ess-r-post-run-hook #'ess-plot-on-startup-h')
+```
+
+Alternatively you can call M-x `ess-plot-toggle` to start redirecting plots for
+that process.
 
 ### Straight
-Add the following to your `init.el`
+Add the following to your `init.el`:
 ```emacs-lisp
 (use-package ess-plot
   :straight (ess-plot :type git :host github :repo "DennieTeMolder/ess-plot")
-  :defer t)
+  :hook (ess-r-post-run . ess-plot-on-startup-h))
 ```
 
 ### Doom
@@ -24,7 +32,8 @@ Add the following to your `package.el`:
 
 And add the following to your `config.el`
 ```emacs-lisp
-(use-package! ess-plot :defer t)
+(use-package! ess-plot
+  :hook (ess-r-post-run . ess-plot-on-startup-h))
 ```
 
 ## Usage
@@ -38,6 +47,16 @@ Calling `M-x ess-plot-toggle` again stops plots from being redirected and closes
 the plot window. It is recommended to create bindings for `ess-plot-toggle`,
 `ess-plot-show`, and optionally `ess-plot-hide`.
 
+When not using `ess-plot-on-startup-h`, call M-x `ess-plot-toggle` to start
+redirecting plots for the current process. Gg-plots should be rendered
+automatically, but base-R plots require calling M-x `ess-plot-show` or
+'dev.flush()' in R to render the plot to the window. Plots are displayed in PNG
+format thus plot history can be navigated using `image-mode` bindings (i.e.
+`image-previous-file`). Calling M-x `ess-plot-hide` hides the plot window until
+a new plot is generated. Calling `ess-plot-toggle` again stops plots from being
+redirected. If the plot window was closed call M-x `ess-plot-show` to re-display
+the last plot.
+
 You can change the resolution and size of the next plot from inside of R. 
 The code below restores the default settings:
 ```R
@@ -49,20 +68,18 @@ options(
 )
 ```
 
-You can control if `ess-plot-toggle` will show immediately show the plot window
-(default) or only when the next plot is created (or `ess-plot-show` is called)
-by setting `ess-plot-window-show-on-startup` to `t` or `nil` respectively. You
-can customize how the plot window is created and positioned by changing
-`ess-plot-window-create-function`.
+You can control if `ess-plot-toggle` will immediately show the plot window or
+only when the next plot is created (default) by setting
+`ess-plot-window-show-on-startup` to `t` or `nil` respectively. You can
+customize how the plot buffer are displayed
+`ess-plot-display-function`.
 
 ## Limitations
- - After reloading the process the user needs to call `ess-plot-toggle` twice to restore functionality
  - Only implemented for the R dialect (help is welcome for others)
- - Can only be active for one process at a time
 
 ## Alternatives
 - httpgd (R package) & `xwidget-webkit-browse-url`: This does provide a more
   RStudio like experience, allowing the user to zoom and export plots.
   However, in contrast to ESS-plot, this combination requires Emacs to
-  be compiled with xwidget support and forces the user to install additional
-  packages into their environment.
+  be compiled with xwidget support and requires manual installation of a
+  package into the R enviroment.
