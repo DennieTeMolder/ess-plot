@@ -1,36 +1,5 @@
 ### Functions ------
 ## Plotting ------
-# Directory to which finalized plots are moved, to trigger Emacs' filewatcher
-# NOTE used by M-x ess-plot-process-dir
-.ESS_PLOT_DIR. <- file.path(normalizePath(tempdir(check = TRUE)), "session_plots")
-if (!file.exists(.ESS_PLOT_DIR.)) dir.create(.ESS_PLOT_DIR.)
-
-.ess_plot_make_filename <- function(n) {
-  file.path(.ESS_PLOT_DIR., sprintf("%03d.png", n))
-}
-
-.ess_plot_files <- function() {
-  list.files(.ESS_PLOT_DIR., pattern = "\\d{3}\\.png$", full.names = TRUE)
-}
-
-.ess_plot_create_counter <- function() {
-  n <- length(.ess_plot_files())
-  function(increment = FALSE) {
-    if (increment)
-      n <<- n + 1
-    n
-  }
-}
-.ess_plot_get_count <- .ess_plot_create_counter()
-
-# NOTE used by M-x ess-plot-file-last
-.ess_plot_file_last <- function() {
-  n <- .ess_plot_get_count()
-  if (n == 0)
-    return(NULL)
-  .ess_plot_make_filename(n)
-}
-
 # Get index of current plotting device
 .ess_plot_dev <- function() {
   filename <- getOption("ess_plot.file", default = 0)
@@ -78,19 +47,18 @@ if (!file.exists(.ESS_PLOT_DIR.)) dir.create(.ESS_PLOT_DIR.)
   dev.cur()
 }
 
-.ess_plot_start <- function(width = 7, height = 5, units = "in", res = 300, ...) {
+# NOTE used by ess-plot--load
+.ess_plot_start <- function(plot_dir, width = 7, height = 5, units = "in", res = 300, ...) {
   # Cleanup old graphics device if active
   if (.ess_plot_is_current()) {
     dev.off()
   } else if (dev.cur() > 1) {
     stop("Another graphics devices is already active! Run `dev.off()` until the result is 1.")
-  } else {
-    message("Redirecting all graphics to PNG files.\n",
-            "Call `dev.flush()` to force write/display and `dev.off()` to disable.")
   }
 
   # Set options required for plotting
   base::options(
+    "ess_plot.dir" = normalizePath(plot_dir),
     "plot.width" = width,
     "plot.height" = height,
     "plot.units" = units,
@@ -99,7 +67,25 @@ if (!file.exists(.ESS_PLOT_DIR.)) dir.create(.ESS_PLOT_DIR.)
   .ess_plot_pdf_sync_opts()
 
   # Start initial device
-  invisible(.ess_plot_new())
+  return_val <- .ess_plot_new()
+
+  message(
+    "Redirecting all graphics to PNG files.\n",
+    "Call `dev.flush()` to force write/display and `dev.off()` to disable."
+  )
+
+  invisible(return_val)
+}
+
+.ess_plot_make_filename <- function() {
+  plot_dir <- getOption("ess_plot.dir", default = "")
+  if (!dir.exists(plot_dir)) {
+    stop("ESS-plot directory does not exist: '", plot_dir, "'")
+  }
+
+  timestamp <- sub("\\.", "", format(Sys.time(), "%Y%m%d_%H%M%OS3"))
+  session_id <- gsub(".*Rtmp([^/\\])", "R\\1", tempdir())
+  file.path(plot_dir, paste0(timestamp, "_", session_id, ".png"))
 }
 
 .ess_plot_show <- function() {
@@ -115,8 +101,7 @@ if (!file.exists(.ESS_PLOT_DIR.)) dir.create(.ESS_PLOT_DIR.)
   # Move plot file to trigger the filewatcher
   source_file <- getOption("ess_plot.file")
   if (file.exists(source_file)) {
-    target_file <- .ess_plot_make_filename(.ess_plot_get_count(increment = TRUE))
-    file.rename(source_file, target_file)
+    file.rename(source_file, .ess_plot_make_filename())
   }
 
   # Open a new plot
@@ -224,8 +209,6 @@ ggsave <- function(filename,
   }
   setHook(packageEvent("grDevices", "attach"), hook_fun)
   setHook(packageEvent("ggplot2", "attach"), hook_fun)
-
-  .ess_plot_start()
 }
 
 # NOTE used by M-x ess-plot-unload

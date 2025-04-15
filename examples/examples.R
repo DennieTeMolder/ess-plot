@@ -1,10 +1,4 @@
-# For M-x ess-plot-load
-local(source('./ess-plot.R', local = TRUE))
-
-# Alternative if Emacs is compiled w/ xwidgets support (https://github.com/nx10/httpgd)
-## httpgd::hgd()
-## httpgd::hgd_close()
-
+# Load ggplot for plotting functions and example data
 library(ggplot2)
 theme_set(theme_bw())
 
