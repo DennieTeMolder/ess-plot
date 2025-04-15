@@ -12,7 +12,6 @@
   match(filename, dev_files, nomatch = 0)
 }
 
-# NOTE used by ess-plot-current-p
 .ess_plot_is_current <- function() {
   .ess_plot_dev() == dev.cur()
 }
@@ -121,7 +120,6 @@ dev.flush <- function(...) {
   }
 }
 
-# REVIEW replace w/ grDevices::pdf.options()
 options <- function(...) {
   result <- base::options(...)
   if (is.null(names(list(...))))
@@ -168,7 +166,7 @@ ggsave <- function(filename,
 .ess_plot_env <- function() {
   pos <- match("ESSR_plot", search())
   if (is.na(pos))
-    stop("ESSR_plot is not currently attached. Call M-x ess-plot-load.")
+    stop("ESSR_plot is not currently attached. Call M-x ess-plot-toggle.")
   as.environment(pos)
 }
 

@@ -23,18 +23,18 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;; all M-x `ess-plot-toggle' (or attach `ess-plot-on-startup-h') to start
+;; When not using `ess-plot-on-startup-h', call M-x `ess-plot-toggle' to start
 ;; redirecting plots for the current process. Gg-plots should be rendered
 ;; automatically, but base-R plots require calling M-x `ess-plot-show' or
 ;; 'dev.flush()' in R to render the plot to the window. Plots are displayed in
 ;; PNG format thus plot history can be navigated using `image-mode' bindings
 ;; (i.e. `image-previous-file'). Calling M-x `ess-plot-hide' hides the plot
-;; window until a new plot is generated. Calling `ess-plot-toggle' again stops
-;; plots from being redirected. If the plot window was closed call M-x
-;; `ess-plot-show' to re-display the last plot. You can customise how the plots
-;; are displayed by changing `ess-plot-display-function'. To change the plot
-;; size and resolution modify options(plot.width, plot.height, plot.res,
-;; plot.units) inside of the R process.
+;; window until a new plot is generated. If the plot window was closed call M-x
+;; `ess-plot-show' to re-display the last plot. Calling `ess-plot-toggle' again
+;; stops plots from being redirected. You can customise how the plots are
+;; displayed by changing `ess-plot-display-function'. To change the plot size
+;; and resolution modify options(plot.width, plot.height, plot.res, plot.units)
+;; inside of the R process.
 ;;
 ;; Current limitations:
 ;;  - Only implemented for the R dialect (help is welcome for others)

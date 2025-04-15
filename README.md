@@ -37,25 +37,15 @@ And add the following to your `config.el`
 ```
 
 ## Usage
-Call `M-x ess-plot-toggle` to start redirecting plots. Gg-plots should be
-rendered automatically, but base-R plots require calling either `M-x
-ess-plot-show` in Emacs or `dev.flush()` in R to render the plot to the window.
-If the plot window was closed, calling `M-x ess-plot-show` will cause the latest
-plot to be redisplayed. Plots are displayed in PNG format thus plot history can
-be navigated using `image-mode` bindings (i.e. `M-x image-previous-file`).
-Calling `M-x ess-plot-toggle` again stops plots from being redirected and closes
-the plot window. It is recommended to create bindings for `ess-plot-toggle`,
-`ess-plot-show`, and optionally `ess-plot-hide`.
-
 When not using `ess-plot-on-startup-h`, call M-x `ess-plot-toggle` to start
 redirecting plots for the current process. Gg-plots should be rendered
 automatically, but base-R plots require calling M-x `ess-plot-show` or
-'dev.flush()' in R to render the plot to the window. Plots are displayed in PNG
+`dev.flush()` in R to render the plot to the window. Plots are displayed in PNG
 format thus plot history can be navigated using `image-mode` bindings (i.e.
 `image-previous-file`). Calling M-x `ess-plot-hide` hides the plot window until
-a new plot is generated. Calling `ess-plot-toggle` again stops plots from being
-redirected. If the plot window was closed call M-x `ess-plot-show` to re-display
-the last plot.
+a new plot is generated. If the plot window was closed call M-x `ess-plot-show`
+to re-display the last plot. Calling `ess-plot-toggle` again stops plots from
+being redirected.
 
 You can change the resolution and size of the next plot from inside of R. 
 The code below restores the default settings:
