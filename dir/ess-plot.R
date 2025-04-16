@@ -1,15 +1,16 @@
+# NOTE this file is sourced by ess-plot--load
 ### Functions ------
 ## Plotting ------
 # Get index of current plotting device
 .ess_plot_dev <- function() {
-  filename <- getOption("ess_plot.file", default = 0)
+  filename <- getOption("ess_plot.file", default = 0L)
   dev_files <- sapply(.Devices, function(dev) {
     path <- attr(dev, "filepath", exact = TRUE)
     if (is.null(path))
       return(NA_character_)
     path
   })
-  match(filename, dev_files, nomatch = 0)
+  match(filename, dev_files, nomatch = 0L)
 }
 
 .ess_plot_is_current <- function() {
@@ -46,12 +47,12 @@
   dev.cur()
 }
 
-# NOTE used by ess-plot--load
-.ess_plot_start <- function(plot_dir, width = 7, height = 5, units = "in", res = 300, ...) {
+# NOTE used by ess-plot-start
+.ess_plot_start <- function(plot_dir, width = 7, height = 5, units = "in", res = 300) {
   # Cleanup old graphics device if active
   if (.ess_plot_is_current()) {
     dev.off()
-  } else if (dev.cur() > 1) {
+  } else if (dev.cur() > 1L) {
     stop("Another graphics devices is already active! Run `dev.off()` until the result is 1.")
   }
 
@@ -74,6 +75,15 @@
   )
 
   invisible(return_val)
+}
+
+.ess_plot_stop <- function() {
+  idx <- .ess_plot_dev()
+  if (idx > 1L) {
+    if (idx != dev.cur())
+      warning("ESS-plot: device closed but another is still active.")
+    dev.off(idx)
+  }
 }
 
 .ess_plot_make_filename <- function() {
@@ -163,13 +173,6 @@ ggsave <- function(filename,
 }
 
 ## Environment management ------
-.ess_plot_env <- function() {
-  pos <- match("ESSR_plot", search())
-  if (is.na(pos))
-    stop("ESSR_plot is not currently attached. Call M-x ess-plot-toggle.")
-  as.environment(pos)
-}
-
 .ess_plot_register_methods <- function() {
   .overrideS3method <- function(method, value) {
     env <- get(".__S3MethodsTable__.", envir = .BaseNamespaceEnv)
@@ -190,10 +193,13 @@ ggsave <- function(filename,
   } else {
     ESSR_plot <- env
   }
+
   if (!is.na(pos))
     detach(pos = pos)
-  attach(ESSR_plot, warn.conflicts = warn.conflicts)
+  return_val <- attach(ESSR_plot, warn.conflicts = warn.conflicts)
   .ess_plot_register_methods()
+
+  return(return_val)
 }
 
 .ess_plot_env_setup <- function(env = NULL) {
@@ -209,18 +215,13 @@ ggsave <- function(filename,
   setHook(packageEvent("ggplot2", "attach"), hook_fun)
 }
 
-# NOTE used by M-x ess-plot-unload
+# NOTE used by M-x ess-plot--unload
 .ess_plot_env_teardown <- function(detach = FALSE) {
-  setHook(packageEvent("grDevices", "attach"), NULL, 'replace')
-  setHook(packageEvent("ggplot2", "attach"), NULL, 'replace')
+  setHook(packageEvent("grDevices", "attach"), NULL, "replace")
+  setHook(packageEvent("ggplot2", "attach"), NULL, "replace")
 
   # Stop current plotting device if it is active
-  which <- .ess_plot_dev()
-  if (which > 1L) {
-    if (which != dev.cur())
-      warning("ESS-plot: device closed but another is still active.")
-    dev.off(which)
-  }
+  .ess_plot_stop()
 
   if (detach)
     detach("ESSR_plot", character.only = TRUE)

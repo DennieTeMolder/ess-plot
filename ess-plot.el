@@ -143,8 +143,7 @@ If both are nil `display-buffer' is used as fallback."
            (setq win (split-window-below nil win))))
     (if win
         (with-selected-window win
-          (switch-to-buffer buf)
-          (selected-window))
+          (get-buffer-window (pop-to-buffer-same-window buf)))
       (display-buffer buf))))
 
 (defun ess-plot--placeholder ()
@@ -205,9 +204,7 @@ If both are nil `display-buffer' is used as fallback."
       (ess-eval-linewise cmd "Attaching ESS-plot functions" nil nil 'wait-last-prompt))
     (unless (ess-plot-loaded-p)
       (error "ESS-plot: failed to load R code into process: %s"
-             ess-local-process-name)))
-  (ess-plot-watcher-start)
-  (ess-command (format ".ess_plot_start('%s')\n" ess-plot-dir)))
+             ess-local-process-name))))
 
 (defun ess-plot--unload ()
   "Detach ess-plot from `ess-local-process-name' and stop redirecting plots."
@@ -220,29 +217,43 @@ If both are nil `display-buffer' is used as fallback."
 
 ;;* User facing functions
 ;;;###autoload
-(defun ess-plot-toggle (&optional startup)
+(defun ess-plot-start ()
+  "Start displaying plots inside of Emacs for `ess-local-process-name'."
+  (interactive)
+  (ess-force-buffer-current)
+  (ess-plot-watcher-start)
+  (ess-plot--load)
+  (ess-eval-linewise (format ".ess_plot_start('%s')\n" ess-plot-dir)
+                     "Redirecting plots to Emacs")
+  (when ess-plot-window-show-on-startup
+    (or (ess-plot--show-last)
+        (funcall ess-plot-display-function
+                 (ess-plot--placeholder))))
+  (message "ESS-plot: started displaying plots")
+  ess-plot-dir)
+
+(defun ess-plot-stop ()
+  "Stop displaying plots inside of Emacs for `ess-local-process-name'."
+  (interactive)
+  (ess-force-buffer-current)
+  (ess-plot--unload)
+  (message "ESS-plot: stopped displaying plots"))
+
+;;;###autoload
+(defun ess-plot-toggle ()
   "Toggle displaying ESS plots inside of Emacs.
 If STARTUP is non-nil plotting will never be deactivate."
-  (interactive "P")
+  (interactive)
   (ess-force-buffer-current)
-  (let ((loaded-p (ess-plot-loaded-p)))
-    (when (and ess-plot-window-show-on-startup
-               (or startup (not loaded-p)))
-      (or (ess-plot--show-last)
-          (funcall ess-plot-display-function (ess-plot--placeholder))))
-    (if loaded-p
-        (if startup
-            (message "ESS-plot: already loaded")
-          (ess-plot--unload)
-          (message "ESS-plot: stopped displaying plots"))
-      (ess-plot--load)
-      (message "ESS-plot: started displaying plots"))))
+  (if (ess-plot-loaded-p)
+      (ess-plot-stop)
+    (ess-plot-start)))
 
 ;;;###autoload
 (defun ess-plot-on-startup-h ()
   "Hook function for `ess-r-post-run-hook' to start plot redirection to Emacs."
   (when ess-plot-dir
-    (ess-plot-toggle 'startup)))
+    (ess-plot-start)))
 
 ;;;###autoload
 (defun ess-plot-show ()
