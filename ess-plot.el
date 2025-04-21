@@ -152,11 +152,16 @@ If both are nil `display-buffer' is used as fallback."
     (setq-local default-directory ess-plot-dir)
     (current-buffer)))
 
-(defun ess-plot--show-last ()
-  "Display `ess-plot--file-last' in `ess-plot-window' creating it if needed."
-  (when ess-plot--file-last
-    (funcall ess-plot-display-function
-             (find-file-noselect ess-plot--file-last))))
+(defun ess-plot--show-last (&optional show-placeholder)
+  "Display `ess-plot--file-last' in `ess-plot-window' creating it if needed.
+If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
+`ess-plot--file-last' is nil."
+  (if ess-plot--file-last
+      (funcall ess-plot-display-function
+               (find-file-noselect ess-plot--file-last))
+    (when show-placeholder
+      (funcall ess-plot-display-function
+               (ess-plot--placeholder)))))
 
 ;;* File watcher
 (defun ess-plot--file-notify-open (event)
@@ -226,9 +231,7 @@ If both are nil `display-buffer' is used as fallback."
   (ess-eval-linewise (format ".ess_plot_start('%s')\n" ess-plot-dir)
                      "Redirecting plots to Emacs")
   (when ess-plot-window-show-on-startup
-    (or (ess-plot--show-last)
-        (funcall ess-plot-display-function
-                 (ess-plot--placeholder))))
+    (ess-plot--show-last 'show-placeholder))
   (message "ESS-plot: started displaying plots")
   ess-plot-dir)
 
@@ -272,6 +275,17 @@ If STARTUP is non-nil plotting will never be deactivate."
   "Hide the current plot window by killing it, also cleans-up all plot buffers."
   (interactive)
   (ess-plot-cleanup-buffers 'kill-visible))
+
+;;;###autoload
+(defun ess-plot-window-here (&optional window no-kill)
+  "Turn WINDOW into an `ess-plot-window'. Defaults to selected window.
+Unless NO-KILL is non-nil the other plot windows are killed."
+  (interactive)
+  (unless no-kill
+    (ess-plot-cleanup-buffers 'kill-visible))
+  (with-selected-window (or window (selected-window))
+    (let ((ess-plot-display-function #'pop-to-buffer-same-window))
+      (ess-plot--show-last 'show-placeholder))))
 
 (provide 'ess-plot)
 
