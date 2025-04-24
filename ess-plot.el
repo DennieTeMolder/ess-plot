@@ -194,6 +194,18 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
   (ess-plot-cleanup-buffers))
 
 ;;* State management
+(defun ess-plot--kill-buffer-h ()
+  "Call `ess-plot--watcher-stop' if `current-buffer' is the last ESS process.
+Intended for `kill-buffer-hook'."
+  (when (and ess-plot--descriptor (derived-mode-p 'inferior-ess-mode))
+    (update-ess-process-name-list)
+    (when (or (= 0 (length ess-process-name-list))
+              (and (= 1 (length ess-process-name-list))
+                   ess-local-process-name
+                   (member (list ess-local-process-name)
+                           ess-process-name-list)))
+      (ess-plot--watcher-stop))))
+
 ;; REVIEW Can we add remote support like in `ess-r-load-ESSR'?
 (defun ess-plot--load ()
   "Attach ess-plot to `ess-local-process-name' and start redirecting plots."
@@ -207,7 +219,9 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
       (ess-eval-linewise cmd "Attaching ESS-plot functions" nil nil 'wait-last-prompt))
     (unless (ess-plot-loaded-p)
       (error "ESS-plot: failed to load R code into process: %s"
-             ess-local-process-name))))
+             ess-local-process-name)))
+  (with-current-buffer (ess-get-current-process-buffer)
+    (add-hook 'kill-buffer-hook #'ess-plot--kill-buffer-h nil 'local)))
 
 (defun ess-plot--unload ()
   "Detach ess-plot from `ess-local-process-name' and stop redirecting plots."
