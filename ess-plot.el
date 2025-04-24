@@ -180,27 +180,25 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
                          '(change)
                          #'ess-plot--file-notify-open))
 
-(defun ess-plot-watcher-start ()
+(defun ess-plot--watcher-start ()
   "Start the file watcher for `ess-plot-dir' that will display new plots."
-  (interactive)
   (unless ess-plot--descriptor
     (make-directory ess-plot-dir t)
     (setq ess-plot--descriptor (ess-plot--watch-dir ess-plot-dir))))
 
-(defun ess-plot-watcher-stop ()
-  "Stop file watcher corresponding to `ess-plot--descriptor'."
-  (interactive)
+(defun ess-plot--watcher-stop ()
+  "Stop file watcher corresponding to `ess-plot--descriptor' and `ess-plot-dir'."
   (when ess-plot--descriptor
     (file-notify-rm-watch ess-plot--descriptor)
     (setq ess-plot--descriptor nil))
-  (ess-plot-cleanup-buffers 'kill-visible))
+  (ess-plot-cleanup-buffers))
 
 ;;* State management
 ;; REVIEW Can we add remote support like in `ess-r-load-ESSR'?
 (defun ess-plot--load ()
-  "Attatch ess-plot to `ess-local-process-name' and start redirecting plots."
+  "Attach ess-plot to `ess-local-process-name' and start redirecting plots."
   (unless ess-plot-dir
-    (error "`ess-plot-dir' is unset."))
+    (error "`ess-plot-dir' is unset"))
   (unless (string= "R" (ess-get-process-variable 'ess-dialect))
     (error "ESS-plot currently only supports the 'R' dialect"))
   (unless (ess-plot-loaded-p)
@@ -226,7 +224,7 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
   "Start displaying plots inside of Emacs for `ess-local-process-name'."
   (interactive)
   (ess-force-buffer-current)
-  (ess-plot-watcher-start)
+  (ess-plot--watcher-start)
   (ess-plot--load)
   (ess-eval-linewise (format ".ess_plot_start('%s')\n" ess-plot-dir)
                      "Redirecting plots to Emacs")
