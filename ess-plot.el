@@ -195,16 +195,17 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
 
 ;;* State management
 (defun ess-plot--kill-buffer-h ()
-  "Call `ess-plot--watcher-stop' if `current-buffer' is the last ESS process.
+  "Call `ess-plot--watcher-stop' if `current-buffer' is the last plot process.
 Intended for `kill-buffer-hook'."
   (when (and ess-plot--descriptor (derived-mode-p 'inferior-ess-mode))
-    (update-ess-process-name-list)
-    (when (or (= 0 (length ess-process-name-list))
-              (and (= 1 (length ess-process-name-list))
-                   ess-local-process-name
-                   (member (list ess-local-process-name)
-                           ess-process-name-list)))
-      (ess-plot--watcher-stop))))
+    (let (other-bufs)
+      (dolist (buf (remq (current-buffer) (buffer-list)))
+        (with-current-buffer buf
+            (and (derived-mode-p 'inferior-ess-mode)
+                 (memq 'ess-plot--kill-buffer-h kill-buffer-hook)
+                 (push buf other-bufs))))
+      (when (= 0 (length other-bufs))
+        (ess-plot--watcher-stop)))))
 
 ;; REVIEW Can we add remote support like in `ess-r-load-ESSR'?
 (defun ess-plot--load ()
