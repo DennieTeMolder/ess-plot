@@ -200,10 +200,9 @@ Intended for `kill-buffer-hook'."
   (when (and ess-plot--descriptor (derived-mode-p 'inferior-ess-mode))
     (let (other-bufs)
       (dolist (buf (remq (current-buffer) (buffer-list)))
-        (with-current-buffer buf
-            (and (derived-mode-p 'inferior-ess-mode)
-                 (memq 'ess-plot--kill-buffer-h kill-buffer-hook)
-                 (push buf other-bufs))))
+        (when (memq 'ess-plot--kill-buffer-h
+                    (buffer-local-value 'kill-buffer-hook buf))
+          (push buf other-bufs)))
       (when (= 0 (length other-bufs))
         (ess-plot--watcher-stop)))))
 
