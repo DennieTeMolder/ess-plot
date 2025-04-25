@@ -195,9 +195,9 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
 
 ;;* State management
 (defun ess-plot--kill-buffer-h ()
-  "Call `ess-plot--watcher-stop' if `current-buffer' is the last plot process.
+  "Call `ess-plot--watcher-stop' if no other buffers have this hook.
 Intended for `kill-buffer-hook'."
-  (when (and ess-plot--descriptor (derived-mode-p 'inferior-ess-mode))
+  (when ess-plot--descriptor
     (let (other-bufs)
       (dolist (buf (remq (current-buffer) (buffer-list)))
         (when (memq 'ess-plot--kill-buffer-h
