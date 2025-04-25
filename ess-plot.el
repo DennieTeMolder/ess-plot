@@ -219,9 +219,7 @@ Intended for `kill-buffer-hook'."
       (ess-eval-linewise cmd "Attaching ESS-plot functions" nil nil 'wait-last-prompt))
     (unless (ess-plot-loaded-p)
       (error "ESS-plot: failed to load R code into process: %s"
-             ess-local-process-name)))
-  (with-current-buffer (ess-get-current-process-buffer)
-    (add-hook 'kill-buffer-hook #'ess-plot--kill-buffer-h nil 'local)))
+             ess-local-process-name))))
 
 (defun ess-plot--unload ()
   "Detach ess-plot from `ess-local-process-name' and stop redirecting plots."
@@ -238,8 +236,10 @@ Intended for `kill-buffer-hook'."
   "Start displaying plots inside of Emacs for `ess-local-process-name'."
   (interactive)
   (ess-force-buffer-current)
-  (ess-plot--watcher-start)
   (ess-plot--load)
+  (ess-plot--watcher-start)
+  (with-current-buffer (ess-get-current-process-buffer)
+    (add-hook 'kill-buffer-hook #'ess-plot--kill-buffer-h nil 'local))
   (ess-eval-linewise (format ".ess_plot_start('%s')\n" ess-plot-dir)
                      "Redirecting plots to Emacs")
   (when ess-plot-window-show-on-startup
