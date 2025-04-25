@@ -4,7 +4,7 @@
 
 ;; Author: Dennie te Molder
 ;; Created: 30-8-2023
-;; Version: 0.2.0
+;; Version: 0.2.1
 ;; URL: https://github.com/DennieTeMolder/ess-plot
 ;; Package-Requires: ((emacs "26.1") (ess "18.10.1"))
 ;; Keywords: tools ESS R plot dedicated window
