@@ -54,17 +54,21 @@
 (require 'filenotify)
 
 ;;* Variables
-;; NOTE In Emacs29+ `file-notify-descriptors' is cleared when the dir is deleted
 (defvar ess-plot-dir
   (expand-file-name "ess_plot/" temporary-file-directory)
-  "Folder for storing plots that are to be displayed.
-Will be created it it doesn't exist.")
+  "Folder for storing plots that are to be displayed in Emacs.
+Will be created if it doesn't exist.")
 
 (defvar ess-plot-window-show-on-startup nil
-  "Controls weather `ess-plot-toggle' will trigger `ess-plot-show'.")
+  "Controls whether `ess-plot-start' immediately creates the plot window.
+If nil, the plot window will be created when a new plot is rendered.
+Also indirectly affects `ess-plot-toggle' and `ess-plot-on-startup-h'.")
 
 (defvar ess-plot-display-function #'ess-plot-display-default
-  "Function used to display new plots. See `ess-plot-display-default'.")
+  "Function used to display new plot buffers.
+The function should take the buffer to display as the only argument and
+should return the window used to display the buffer. Example values
+include: `ess-plot-display-default' or `display-buffer'.")
 
 (defvar ess-plot-placeholder-name "*R plot*"
   "Name of the placeholder plot buffer.")
@@ -74,10 +78,11 @@ Will be created it it doesn't exist.")
 
 (defvar ess-plot--source-dir
   (file-name-directory (file-truename (or load-file-name buffer-file-name)))
-  "Directory containing ess-plot.el(c) and the dir/ folder.")
+  "Source directory containing ess-plot.el(c) and the dir/ folder.")
 
+;; NOTE In Emacs29+ `file-notify-descriptors' is cleared when the dir is deleted
 (defvar ess-plot--descriptor nil
-  "File notify descriptor watching the plot folder.")
+  "File notify descriptor watching `ess-plot-dir'.")
 
 (defvar ess-plot--file-last nil
   "Most recent ESS plot file.")
