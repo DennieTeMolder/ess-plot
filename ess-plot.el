@@ -131,12 +131,19 @@ The visible plot buffers are only killed if KILL-VISIBLE is t."
   (cl-some (lambda (win) (with-selected-window win
                            (when-let ((buf (ess-get-current-process-buffer)))
                              (get-buffer-window buf))))
-           (window-list-1 nil 'ignore-minibuffer (selected-frame))))
+           (window-list-1 nil 'ignore-minibuffer 'visible)))
+
+(defun ess-plot--placeholder ()
+  "Return the placeholder buffer based on `ess-plot-placeholder-name'."
+  (with-current-buffer (get-buffer-create ess-plot-placeholder-name)
+    (setq-local default-directory ess-plot-dir)
+    (current-buffer)))
 
 ;;* Window management
 (defun ess-plot-window ()
-  "Return the window currently displaying ESS plots."
-  (cl-some #'get-buffer-window (ess-plot-buffers)))
+  "Return the first window currently displaying ESS plots."
+  (cl-some (lambda (win) (and (ess-plot-buffer-p (window-buffer win)) win))
+           (window-list-1 nil 'ignore-minibuffer 'visible)))
 
 (defun ess-plot-display-default (buf)
   "Display BUF in `ess-plot-window', else split `ess-plot-visible-process-buffer'.
@@ -151,12 +158,6 @@ If both are nil `display-buffer' is used as fallback."
         (with-selected-window win
           (get-buffer-window (pop-to-buffer-same-window buf)))
       (display-buffer buf))))
-
-(defun ess-plot--placeholder ()
-  "Return the placeholder buffer based on `ess-plot-placeholder-name'."
-  (with-current-buffer (get-buffer-create ess-plot-placeholder-name)
-    (setq-local default-directory ess-plot-dir)
-    (current-buffer)))
 
 (defun ess-plot--show-last (&optional show-placeholder)
   "Display `ess-plot--file-last' in `ess-plot-window' creating it if needed.
