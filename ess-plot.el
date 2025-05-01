@@ -102,8 +102,9 @@ include: `ess-plot-display-default' or `display-buffer'.")
   "Return BUF if it displays an ESS plot. Defaults to `current-buffer'."
   (with-current-buffer (or buf (current-buffer))
     (and default-directory
-         (cl-some #'derived-mode-p ess-plot-buffer-modes)
-         (equal ess-plot-dir (file-truename default-directory)))))
+         (equal ess-plot-dir default-directory)
+         (derived-mode-p ess-plot-buffer-modes)
+         (current-buffer))))
 
 ;;* Buffer management
 (defun ess-plot-buffers ()
