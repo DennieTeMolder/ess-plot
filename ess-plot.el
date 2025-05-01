@@ -86,6 +86,7 @@ Will be created it it doesn't exist.")
 (defun ess-plot-loaded-p ()
   "Non-nil if ESSR_plot is attached to `ess-local-process-name'."
   (and (ess-process-live-p)
+       (string= "R" (ess-get-process-variable 'ess-dialect))
        (ess-boolean-command "'ESSR_plot' %in% search()\n")))
 
 (defun ess-plot-file-p (file)
@@ -120,17 +121,17 @@ The visible plot buffers are only killed if KILL-VISIBLE is t."
                   (and win (not kill-visible)))
         (kill-buffer buf)))))
 
-;;* Window management
-(defun ess-plot-window ()
-  "Return the window currently displaying ESS plots."
-  (cl-some #'get-buffer-window (ess-plot-buffers)))
-
 (defun ess-plot-visible-process-buffer ()
   "Return the first visible ESS process buffer or nil."
   (cl-some (lambda (win) (with-selected-window win
                            (when-let ((buf (ess-get-current-process-buffer)))
                              (get-buffer-window buf))))
            (window-list-1 nil 'ignore-minibuffer (selected-frame))))
+
+;;* Window management
+(defun ess-plot-window ()
+  "Return the window currently displaying ESS plots."
+  (cl-some #'get-buffer-window (ess-plot-buffers)))
 
 (defun ess-plot-display-default (buf)
   "Display BUF in `ess-plot-window', else split `ess-plot-visible-process-buffer'.
@@ -182,6 +183,8 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
 
 (defun ess-plot--watcher-start ()
   "Start the file watcher for `ess-plot-dir' that will display new plots."
+  (unless ess-plot-dir
+    (error "`ess-plot-dir' is unset"))
   (unless ess-plot--descriptor
     (make-directory ess-plot-dir t)
     (setq ess-plot--descriptor (ess-plot--watch-dir ess-plot-dir))))
@@ -207,11 +210,9 @@ Intended for `kill-buffer-hook'."
 ;; REVIEW Can we add remote support like in `ess-r-load-ESSR'?
 (defun ess-plot--load ()
   "Attach ess-plot to `ess-local-process-name' and start redirecting plots."
-  (unless ess-plot-dir
-    (error "`ess-plot-dir' is unset"))
-  (unless (string= "R" (ess-get-process-variable 'ess-dialect))
-    (error "ESS-plot currently only supports the 'R' dialect"))
   (unless (ess-plot-loaded-p)
+    (unless (string= "R" (ess-get-process-variable 'ess-dialect))
+      (error "ESS-plot currently only supports the 'R' dialect"))
     (let* ((r-src (expand-file-name "dir/ess-plot.R" ess-plot--source-dir))
            (cmd (format "local(source('%s', local = TRUE))\n" r-src)))
       (ess-eval-linewise cmd "Attaching ESS-plot functions" nil nil 'wait-last-prompt))
