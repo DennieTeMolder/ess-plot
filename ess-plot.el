@@ -198,13 +198,11 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
   "Call `ess-plot--watcher-stop' if no other buffers have this hook.
 Intended for `kill-buffer-hook'."
   (when ess-plot--descriptor
-    (let (other-bufs)
-      (dolist (buf (remq (current-buffer) (buffer-list)))
-        (when (memq 'ess-plot--kill-buffer-h
-                    (buffer-local-value 'kill-buffer-hook buf))
-          (push buf other-bufs)))
-      (when (= 0 (length other-bufs))
-        (ess-plot--watcher-stop)))))
+    (unless (cl-some (lambda (buf)
+                       (memq 'ess-plot--kill-buffer-h
+                             (buffer-local-value 'kill-buffer-hook buf)))
+                     (remq (current-buffer) (buffer-list)))
+      (ess-plot--watcher-stop))))
 
 ;; REVIEW Can we add remote support like in `ess-r-load-ESSR'?
 (defun ess-plot--load ()
