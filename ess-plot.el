@@ -141,10 +141,19 @@ The visible plot buffers are only killed if KILL-VISIBLE is t."
     (current-buffer)))
 
 ;;* Window management
+(defun ess-plot--window-search-list (&optional frame)
+  "Return the non-minibuffer windows of all visible frames in a consistent order.
+The list always starts with the first window of FRAME.
+Defaults to the first visible frame."
+  (let ((first-window (frame-root-window (or frame (car (visible-frame-list))))))
+    (while (and first-window (not (window-live-p first-window)))
+      (setq first-window (window-child first-window)))
+    (window-list-1 first-window 'ignore-minibuffer 'visible)))
+
 (defun ess-plot-window ()
   "Return the first window currently displaying ESS plots."
   (cl-some (lambda (win) (and (ess-plot-buffer-p (window-buffer win)) win))
-           (window-list-1 nil 'ignore-minibuffer 'visible)))
+           (ess-plot--window-search-list)))
 
 (defun ess-plot-display-default (buf)
   "Display BUF in `ess-plot-window', else split `ess-plot-visible-process-buffer'.
