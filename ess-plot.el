@@ -284,7 +284,7 @@ If STARTUP is non-nil plotting will never be deactivate."
   (unless (ess-plot-loaded-p)
     (user-error "ESS-plot: not loaded in process '%s', call M-x ess-plot-toggle"
                 ess-local-process-name))
-  (ess-eval-linewise "dev.flush()\n" nil nil nil 'wait-last-prompt)
+  (ess-eval-linewise ".ess_plot_show()\n" "M-x ess-plot-show" nil nil 'wait-last-prompt)
   (unless (ess-plot--show-last)
     (user-error "ESS-plot: no plots to display")))
 

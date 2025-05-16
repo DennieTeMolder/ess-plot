@@ -97,20 +97,21 @@
   file.path(plot_dir, paste0(timestamp, "_", session_id, ".png"))
 }
 
+# NOTE used by M-x ess-plot-show
 .ess_plot_show <- function() {
   # Do noting if plots are not being redirected
   if (.ess_plot_dev() == 0L)
     return(invisible())
   if (!.ess_plot_is_current())
-    stop("Currently redirecting plots, but the active device is not targeting the right file!")
+    stop("Cannot render plot to Emacs, another plotting device is active!")
 
   # Close plot to write to disk
   dev.off()
 
   # Move plot file to trigger the filewatcher
-  source_file <- getOption("ess_plot.file")
-  if (file.exists(source_file)) {
-    file.rename(source_file, .ess_plot_make_filename())
+  plot_file <- getOption("ess_plot.file")
+  if (file.exists(plot_file)) {
+    file.rename(plot_file, .ess_plot_make_filename())
   }
 
   # Open a new plot
@@ -121,7 +122,6 @@
 # NOTE: All of the functions should retain their original functionality.
 # They should also keep working after dev.off() or when the ESSR_plot device is not active
 
-# NOTE used by M-x ess-plot-show
 dev.flush <- function(...) {
   if (.ess_plot_is_current()) {
     .ess_plot_show()
@@ -136,7 +136,9 @@ options <- function(...) {
     return(result)
   # Reset the graphics device if plotting options were changed
   if (any(names(result) %in% c("plot.width", "plot.height", "plot.units", "plot.res"))) {
-    .ess_plot_show()
+    if (.ess_plot_is_current()) {
+      .ess_plot_show()
+    }
     if (any(names(result) %in% c("plot.width", "plot.height"))) {
       .ess_plot_pdf_sync_opts()
     }
