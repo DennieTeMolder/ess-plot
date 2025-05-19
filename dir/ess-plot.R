@@ -1,4 +1,7 @@
 # NOTE this file is sourced by ess-plot--load
+### Global variables ------
+.ESS_PLOT_MASK. <- !isFALSE(getOption("ess_plot.mask_functions"))
+
 ### Functions ------
 ## Plotting ------
 # Get index of current plotting device
@@ -69,9 +72,10 @@
   # Start initial device
   return_val <- .ess_plot_new()
 
+  write_cmd <- if (.ESS_PLOT_MASK.) "dev.flush()" else ".ess_plot_show()"
   message(
-    "Redirecting all graphics to PNG files.\n",
-    "Call `dev.flush()` to force write/display and `dev.off()` to disable."
+    "Redirecting all graphics to PNG files.\nCall `", write_cmd,
+    "` to force write/display and `dev.off()` to disable."
   )
 
   invisible(return_val)
@@ -118,22 +122,15 @@
   invisible(.ess_plot_new())
 }
 
-## Overrides ------
-# NOTE: All of the functions should retain their original functionality.
-# They should also keep working after dev.off() or when the ESSR_plot device is not active
-
-dev.flush <- function(...) {
-  if (.ess_plot_is_current()) {
-    .ess_plot_show()
-  } else {
-    grDevices::dev.flush()
-  }
-}
-
-options <- function(...) {
+.ess_plot_options <- function(..., .ess_plot_only = TRUE) {
   result <- base::options(...)
   if (is.null(names(list(...))))
     return(result)
+
+  opts <- c("plot.width", "plot.height", "plot.units", "plot.res")
+  if (.ess_plot_only && !all(...names() %in% opts))
+    stop("The following options are not recognised: ", setdiff(...names(), opts))
+
   # Reset the graphics device if plotting options were changed
   if (any(names(result) %in% c("plot.width", "plot.height", "plot.units", "plot.res"))) {
     if (.ess_plot_is_current()) {
@@ -146,43 +143,58 @@ options <- function(...) {
   invisible(result)
 }
 
-print.ggplot <- function (...) {
-  result <- ggplot2:::print.ggplot(...)
-  if (.ess_plot_is_current()) {
-    .ess_plot_show()
-  }
-  invisible(result)
-}
+## Overrides ------
+# NOTE: All of the functions should retain their original functionality.
+# They should also keep working after dev.off() or when the ESSR_plot device is not active
 
-ggsave <- function(filename,
-                   plot = ggplot2::last_plot(),
-                   device = NULL,
-                   path = NULL,
-                   scale = 1,
-                   width = getOption("plot.width", NA),
-                   height = getOption("plot.height", NA),
-                   units = getOption("plot.units", "in"),
-                   dpi = getOption("plot.res", 300),
-                   limitsize = TRUE,
-                   bg = NULL,
-                   ...) {
-  if (.ess_plot_dev() > 0L) {
-    .ess_plot_check_opts()
+if (.ESS_PLOT_MASK.) {
+  dev.flush <- function(...) {
+    if (.ess_plot_is_current()) {
+      .ess_plot_show()
+    } else {
+      grDevices::dev.flush()
+    }
   }
-  ggplot2::ggsave(filename = filename, plot = plot, device = device, path = path,
-                  scale = scale, width = width, height = height, units = units,
-                  dpi = dpi, limitsize = limitsize, bg = bg, ...)
+
+  options <- function(...) {
+    .ess_plot_options(..., .ess_plot_only = FALSE)
+  }
+
+  print.ggplot <- function (...) {
+    result <- ggplot2:::print.ggplot(...)
+    if (.ess_plot_is_current()) {
+      .ess_plot_show()
+    }
+    invisible(result)
+  }
+
+  ggsave <- function(filename,
+                     plot = ggplot2::last_plot(),
+                     device = NULL,
+                     path = NULL,
+                     scale = 1,
+                     width = getOption("plot.width", NA),
+                     height = getOption("plot.height", NA),
+                     units = getOption("plot.units", "in"),
+                     dpi = getOption("plot.res", 300),
+                     limitsize = TRUE,
+                     bg = NULL,
+                     ...) {
+    if (.ess_plot_dev() > 0L) {
+      .ess_plot_check_opts()
+    }
+    ggplot2::ggsave(filename = filename, plot = plot, device = device, path = path,
+                    scale = scale, width = width, height = height, units = units,
+                    dpi = dpi, limitsize = limitsize, bg = bg, ...)
+  }
 }
 
 ## Environment management ------
-.ess_plot_register_methods <- function() {
-  .overrideS3method <- function(method, value) {
-    env <- get(".__S3MethodsTable__.", envir = .BaseNamespaceEnv)
-    if (exists(method, envir = env, inherits = FALSE))
-      assign(method, value, envir = env)
-    invisible()
-  }
-  .overrideS3method("print.ggplot", print.ggplot)
+.ess_plot_override_S3_method <- function(method, value) {
+  env <- get(".__S3MethodsTable__.", envir = .BaseNamespaceEnv)
+  if (exists(method, envir = env, inherits = FALSE))
+    assign(method, value, envir = env)
+  invisible()
 }
 
 # NOTE 'ESSR_plot' is referenced by .ess_plot_env_teardown() & M-x ess-plot-loaded-p
@@ -199,31 +211,42 @@ ggsave <- function(filename,
   if (!is.na(pos))
     detach(pos = pos)
   return_val <- attach(ESSR_plot, warn.conflicts = warn.conflicts)
-  .ess_plot_register_methods()
+
+  # NOTE this cannot be performed in the setup functions as it must be
+  # re-triggered when ggplot2 is loaded
+  if (.ESS_PLOT_MASK.)
+    .ess_plot_override_S3_method("print.ggplot", print.ggplot)
 
   return(return_val)
 }
 
 .ess_plot_env_setup <- function(env = NULL) {
   .ess_plot_env_teardown()
-  .ess_plot_env_attach(env)
 
   # Try to stay on top of the packages we are masking
-  hook_fun <- function(...) {
-    if ("ESSR_plot" %in% search())
-      .ess_plot_env_attach(warn.conflicts = FALSE)
+  if (.ESS_PLOT_MASK.) {
+    hook_fun <- function(...) {
+      if ("ESSR_plot" %in% search())
+        .ess_plot_env_attach(warn.conflicts = FALSE)
+    }
+    setHook(packageEvent("grDevices", "attach"), hook_fun)
+    setHook(packageEvent("ggplot2", "attach"), hook_fun)
   }
-  setHook(packageEvent("grDevices", "attach"), hook_fun)
-  setHook(packageEvent("ggplot2", "attach"), hook_fun)
+
+  .ess_plot_env_attach(env)
 }
 
 # NOTE used by M-x ess-plot--unload
 .ess_plot_env_teardown <- function(detach = FALSE) {
-  setHook(packageEvent("grDevices", "attach"), NULL, "replace")
-  setHook(packageEvent("ggplot2", "attach"), NULL, "replace")
-
   # Stop current plotting device if it is active
   .ess_plot_stop()
+
+  if (.ESS_PLOT_MASK.) {
+    if (isNamespaceLoaded("ggplot2"))
+      .ess_plot_override_S3_method("print.ggplot", ggplot2:::print.ggplot)
+    setHook(packageEvent("grDevices", "attach"), NULL, "replace")
+    setHook(packageEvent("ggplot2", "attach"), NULL, "replace")
+  }
 
   if (detach)
     detach("ESSR_plot", character.only = TRUE)
