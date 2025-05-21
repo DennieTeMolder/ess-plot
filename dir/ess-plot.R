@@ -187,6 +187,67 @@ if (.ESS_PLOT_MASK.) {
                     scale = scale, width = width, height = height, units = units,
                     dpi = dpi, limitsize = limitsize, bg = bg, ...)
   }
+
+  png <- function(filename = "Rplot%03d.png",
+                  width = getOption("plot.width", 480),
+                  height = getOption("plot.height", 480),
+                  units = getOption("plot.units", "px"),
+                  pointsize = 12,
+                  bg = "white",
+                  res = getOption("plot.res", NA),
+                  ...) {
+    grDevices::png(filename = filename, width = width, height = height, units = units,
+                   pointsize = pointsize, bg = bg, res = res, ...)
+  }
+
+  jpeg <- function(filename = "Rplot%03d.jpeg",
+                   width = getOption("plot.width", 480),
+                   height = getOption("plot.height", 480),
+                   units = getOption("plot.units", "px"),
+                   pointsize = 12,
+                   quality = 75,
+                   bg = "white",
+                   res = getOption("plot.res", NA),
+                   ...) {
+    grDevices::jpeg(filename = filename, width = width, height = height, units = units,
+                    pointsize = pointsize, quality = quality, bg = bg, res = res, ...)
+  }
+
+  bmp <- function(filename = "Rplot%03d.bmp",
+                  width = getOption("plot.width", 480),
+                  height = getOption("plot.height", 480),
+                  units = getOption("plot.units", "px"),
+                  pointsize = 12,
+                  bg = "white",
+                  res = getOption("plot.res", NA),
+                  ...) {
+    grDevices::bmp(filename = filename, width = width, height = height, units = units,
+                   pointsize = pointsize, bg = bg, res = res, ...)
+  }
+
+  tiff <- function(filename = "Rplot%03d.bmp",
+                   width = getOption("plot.width", 480),
+                   height = getOption("plot.height", 480),
+                   units = getOption("plot.units", "px"),
+                   pointsize = 12,
+                   compression = "none",
+                   bg = "white",
+                   res = getOption("plot.res", NA),
+                   ...) {
+    grDevices::tiff(filename = filename, width = width, height = height, units = units,
+                    pointsize = pointsize, compression = compression, bg = bg,
+                    res = res, ...)
+  }
+
+  svg <- function(filename = if(onefile) "Rplots.svg" else "Rplot%03d.svg",
+                  width = getOption("plot.width", 7),
+                  height = getOption("plot.height", 7),
+                  pointsize = 12,
+                  onefile = FALSE,
+                  ...) {
+    grDevices::svg(filename = filename, width = width, height = height,
+                   pointsize = pointsize, onefile = onefile, ...)
+  }
 }
 
 ## Environment management ------
