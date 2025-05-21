@@ -123,13 +123,18 @@
 }
 
 .ess_plot_options <- function(..., .ess_plot_only = TRUE) {
-  result <- base::options(...)
-  if (is.null(names(list(...))))
-    return(result)
+  plot_opts <- c("plot.width", "plot.height", "plot.units", "plot.res")
 
-  opts <- c("plot.width", "plot.height", "plot.units", "plot.res")
-  if (.ess_plot_only && !all(...names() %in% opts))
-    stop("The following options are not recognised: ", setdiff(...names(), opts))
+  result <- base::options(...)
+  if (is.null(names(list(...)))) {
+    if (.ess_plot_only)
+      return(result[intersect(names(result), plot_opts)])
+    return(result)
+  }
+
+  if (.ess_plot_only && !all(...names() %in% plot_opts))
+    stop("The following options are not recognised: ",
+         paste(setdiff(...names(), plot_opts), collapse = ", "))
 
   # Reset the graphics device if plotting options were changed
   if (any(names(result) %in% c("plot.width", "plot.height", "plot.units", "plot.res"))) {
