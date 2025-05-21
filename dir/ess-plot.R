@@ -74,8 +74,8 @@
 
   write_cmd <- if (.ESS_PLOT_MASK.) "dev.flush()" else ".ess_plot_show()"
   message(
-    "Redirecting all graphics to PNG files.\nCall `", write_cmd,
-    "` to force write/display and `dev.off()` to disable."
+    "Redirecting all graphics to PNG files. Use 'M-x ess-plot-toggle' to disable.",
+    "\nCall `", write_cmd, "` to trigger displaying the plot."
   )
 
   invisible(return_val)

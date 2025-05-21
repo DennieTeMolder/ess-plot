@@ -76,6 +76,16 @@ include: `ess-plot-display-default' or `display-buffer'.")
 (defvar ess-plot-buffer-modes '(image-mode dired-mode)
   "Modes used by `ess-plot-buffer-p' to discern buffers managed by ess-plot.")
 
+(defvar ess-plot-mask-functions-p t
+  "Whether to mask specific R functions for enhanced UX.
+With this enabled you can call the built-in functions dev.flush() in
+place of .ess_plot_show() and options() in place of .ess_plot_options(),
+which enables you to control ess-plot using code that can be run by non
+ess-plot users. Furthermore, this setting also enables automatic
+rendering of ggplots and synchronises plot dimensions with ggsave() and
+png/jpeg/bmp/tiff/svg(). Dimensions for pdf() are always synchronised
+when using .ess_plot_options().")
+
 (defvar ess-plot--source-dir
   (file-name-directory (file-truename (or load-file-name buffer-file-name)))
   "Source directory containing ess-plot.el(c) and the dir/ folder.")
@@ -229,8 +239,11 @@ Intended for `kill-buffer-hook'."
   (unless (ess-plot-loaded-p)
     (unless (string= "R" (ess-get-process-variable 'ess-dialect))
       (error "ESS-plot currently only supports the 'R' dialect"))
-    (let* ((r-src (expand-file-name "dir/ess-plot.R" ess-plot--source-dir))
-           (cmd (format "local(source('%s', local = TRUE))\n" r-src)))
+    (let ((cmd (format (concat "options(ess_plot.mask_functions=%s)\n"
+                               "local(source('%s', local=TRUE))\n")
+                       (if (ess-get-process-variable 'ess-plot-mask-functions-p)
+                           "TRUE" "FALSE")
+                       (expand-file-name "dir/ess-plot.R" ess-plot--source-dir))))
       (ess-eval-linewise cmd "Attaching ESS-plot functions" nil nil 'wait-last-prompt))
     (unless (ess-plot-loaded-p)
       (error "ESS-plot: failed to load R code into process: %s"
