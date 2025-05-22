@@ -111,11 +111,11 @@ when using .ess_plot_options().")
 (defun ess-plot-buffer-p (&optional buf)
   "Return BUF if it displays an ESS plot. Defaults to `current-buffer'."
   (with-current-buffer (or buf (current-buffer))
-    (and default-directory
-         (equal ess-plot-dir default-directory)
-         (or (string= (buffer-name) ess-plot-placeholder-name)
-             (derived-mode-p ess-plot-buffer-modes))
-         (current-buffer))))
+    (or (string= (buffer-name) ess-plot-placeholder-name)
+        (and default-directory
+             (equal ess-plot-dir default-directory)
+             (derived-mode-p ess-plot-buffer-modes)
+             (current-buffer)))))
 
 ;;* Buffer management
 (defun ess-plot--placeholder ()
@@ -127,12 +127,9 @@ when using .ess_plot_options().")
 (defun ess-plot-buffers ()
   "Return a list of buffers associated with an ESS plot."
   (let (plot-bufs)
-    (dolist (buf (buffer-list))
+    (dolist (buf (buffer-list) plot-bufs)
       (when (ess-plot-buffer-p buf)
-        (push buf plot-bufs)))
-    (when-let ((placeholder (get-buffer ess-plot-placeholder-name)))
-      (cl-pushnew placeholder plot-bufs))
-    plot-bufs))
+        (push buf plot-bufs)))))
 
 (defun ess-plot-cleanup-buffers (&optional kill-visible)
   "Kill all unmodified buffers dedicated to ESS plot files.
