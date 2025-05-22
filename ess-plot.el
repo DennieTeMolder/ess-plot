@@ -118,6 +118,12 @@ when using .ess_plot_options().")
          (current-buffer))))
 
 ;;* Buffer management
+(defun ess-plot--placeholder ()
+  "Return the placeholder buffer based on `ess-plot-placeholder-name'."
+  (with-current-buffer (get-buffer-create ess-plot-placeholder-name)
+    (setq-local default-directory ess-plot-dir)
+    (current-buffer)))
+
 (defun ess-plot-buffers ()
   "Return a list of buffers associated with an ESS plot."
   (let (plot-bufs)
@@ -144,12 +150,6 @@ The visible plot buffers are only killed if KILL-VISIBLE is t."
                            (when-let ((buf (ess-get-current-process-buffer)))
                              (get-buffer-window buf))))
            (window-list-1 nil 'ignore-minibuffer 'visible)))
-
-(defun ess-plot--placeholder ()
-  "Return the placeholder buffer based on `ess-plot-placeholder-name'."
-  (with-current-buffer (get-buffer-create ess-plot-placeholder-name)
-    (setq-local default-directory ess-plot-dir)
-    (current-buffer)))
 
 ;;* Window management
 (defun ess-plot--window-search-list (&optional frame)
@@ -180,24 +180,29 @@ If both are nil `display-buffer' is used as fallback."
           (get-buffer-window (pop-to-buffer-same-window buf)))
       (display-buffer buf))))
 
+(defun ess-plot--display (buf)
+  "Call `ess-plot-display-function' and `image-transform-fit-both' on BUF."
+  (prog1 (funcall ess-plot-display-function buf)
+    (when (fboundp 'image-transform-fit-both)
+      (with-current-buffer buf
+        (when (eq major-mode 'image-mode)
+          (image-transform-fit-both))))))
+
 (defun ess-plot--show-last (&optional show-placeholder)
   "Display `ess-plot--file-last' in `ess-plot-window' creating it if needed.
 If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
 `ess-plot--file-last' is nil."
   (if ess-plot--file-last
-      (funcall ess-plot-display-function
-               (find-file-noselect ess-plot--file-last))
+      (ess-plot--display (find-file-noselect ess-plot--file-last))
     (when show-placeholder
-      (funcall ess-plot-display-function
-               (ess-plot--placeholder)))))
+      (ess-plot--display (ess-plot--placeholder)))))
 
 ;;* File watcher
 (defun ess-plot--file-notify-open (event)
   "Display the .png file created by EVENT in `ess-plot-window'."
   (when (and (eq 'created (nth 1 event))
              (string= (file-name-extension (nth 2 event)) "png"))
-    (funcall ess-plot-display-function
-             (find-file-noselect (nth 2 event)))
+    (ess-plot--display (find-file-noselect (nth 2 event)))
     (setq ess-plot--file-last (nth 2 event))
     (when (ess-plot-cleanup-buffers)
       (message "ESS-plot: updated plot"))))
