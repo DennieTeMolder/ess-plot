@@ -111,11 +111,11 @@ when using .ess_plot_options().")
 (defun ess-plot-buffer-p (&optional buf)
   "Return BUF if it displays an ESS plot. Defaults to `current-buffer'."
   (with-current-buffer (or buf (current-buffer))
-    (or (string= (buffer-name) ess-plot-placeholder-name)
-        (and default-directory
-             (equal ess-plot-dir default-directory)
-             (derived-mode-p ess-plot-buffer-modes)
-             (current-buffer)))))
+    (when (or (string= (buffer-name) ess-plot-placeholder-name)
+              (and default-directory
+                   (string= ess-plot-dir default-directory)
+                   (derived-mode-p ess-plot-buffer-modes)))
+      (current-buffer))))
 
 ;;* Buffer management
 (defun ess-plot--placeholder ()
