@@ -223,7 +223,7 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
   (when ess-plot--descriptor
     (file-notify-rm-watch ess-plot--descriptor)
     (setq ess-plot--descriptor nil))
-  (ess-plot-cleanup-buffers))
+  (ess-plot-cleanup-buffers 'kill-visible))
 
 ;;* State management
 (defun ess-plot--kill-buffer-h ()
@@ -287,8 +287,7 @@ Intended for `kill-buffer-hook'."
 
 ;;;###autoload
 (defun ess-plot-toggle ()
-  "Toggle displaying ESS plots inside of Emacs.
-If STARTUP is non-nil plotting will never be deactivate."
+  "Toggle displaying ESS plots inside of Emacs."
   (interactive)
   (ess-force-buffer-current)
   (if (ess-plot-loaded-p)
