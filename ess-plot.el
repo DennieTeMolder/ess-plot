@@ -80,7 +80,7 @@ include: `ess-plot-display-default' or `display-buffer'.")
   "Whether to mask specific R functions for enhanced UX.
 With this enabled you can call the built-in functions dev.flush() in
 place of .ess_plot_show() and options() in place of .ess_plot_options(),
-which enables you to control ess-plot using code that can be run by non
+which enables controlling ess-plot using code that can be run by non
 ess-plot users. Furthermore, this setting also enables automatic
 rendering of ggplots and synchronises plot dimensions with ggsave() and
 png/jpeg/bmp/tiff/svg(). Dimensions for pdf() are always synchronised
@@ -114,7 +114,7 @@ when using .ess_plot_options().")
     (when (or (string= (buffer-name) ess-plot-placeholder-name)
               (and default-directory
                    (string= ess-plot-dir default-directory)
-                   (derived-mode-p ess-plot-buffer-modes)))
+                   (memq major-mode ess-plot-buffer-modes)))
       (current-buffer))))
 
 ;;* Buffer management
