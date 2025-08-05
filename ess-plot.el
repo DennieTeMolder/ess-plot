@@ -102,7 +102,7 @@ when using .ess_plot_options().")
   "Non-nil if ESSR_plot is attached to `ess-local-process-name'."
   (and (ess-process-live-p)
        (string= "R" (ess-get-process-variable 'ess-dialect))
-       (ess-boolean-command "'ESSR_plot' %in% search()\n")))
+       (ess-boolean-command "'ESSR_plot' %in% base::search()\n")))
 
 (defun ess-plot-file-p (file)
   "Return non-nil if FILE is an ESS plot."
@@ -242,8 +242,8 @@ Intended for `kill-buffer-hook'."
   (unless (ess-plot-loaded-p)
     (unless (string= "R" (ess-get-process-variable 'ess-dialect))
       (error "ESS-plot currently only supports the 'R' dialect"))
-    (let ((cmd (format (concat "options(ess_plot.mask_functions=%s)\n"
-                               "local(source('%s', local=TRUE))\n")
+    (let ((cmd (format (concat "base::options(ess_plot.mask_functions=%s)\n"
+                               "base::local(base::source('%s', local=TRUE))\n")
                        (if (ess-get-process-variable 'ess-plot-mask-functions-p)
                            "TRUE" "FALSE")
                        (expand-file-name "dir/ess-plot.R" ess-plot--source-dir))))
