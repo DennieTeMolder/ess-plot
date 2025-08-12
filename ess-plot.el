@@ -76,7 +76,7 @@ include: `ess-plot-display-default' or `display-buffer'.")
 (defvar ess-plot-buffer-modes '(image-mode dired-mode)
   "Modes used by `ess-plot-buffer-p' to discern buffers managed by ess-plot.")
 
-(defvar ess-plot-mask-functions-p t
+(defvar ess-plot-mask-functions t
   "Whether to mask specific R functions for enhanced UX.
 With this enabled you can call the built-in functions dev.flush() in
 place of .ess_plot_show() and options() in place of .ess_plot_options(),
@@ -244,7 +244,7 @@ Intended for `kill-buffer-hook'."
       (error "ESS-plot currently only supports the 'R' dialect"))
     (let ((cmd (format (concat "base::options(ess_plot.mask_functions=%s)\n"
                                "base::local(base::source('%s', local=TRUE))\n")
-                       (if (ess-get-process-variable 'ess-plot-mask-functions-p)
+                       (if (ess-get-process-variable 'ess-plot-mask-functions)
                            "TRUE" "FALSE")
                        (expand-file-name "dir/ess-plot.R" ess-plot--source-dir))))
       (ess-eval-linewise cmd "Attaching ESS-plot functions" nil nil 'wait-last-prompt))
