@@ -134,7 +134,7 @@
   plot_opts <- c("plot.width", "plot.height", "plot.units", "plot.res")
 
   result <- base::options(...)
-  if (is.null(names(list(...)))) {
+  if (is.null(...names())) {
     if (.ess_plot_only)
       return(result[intersect(names(result), plot_opts)])
     return(result)
@@ -144,11 +144,11 @@
     stop("The following options are not recognised: ",
          paste(setdiff(...names(), plot_opts), collapse = ", "))
 
-  # Reset the graphics device if plotting options were changed
   if (any(names(result) %in% c("plot.width", "plot.height", "plot.units", "plot.res"))) {
-    if (.ess_plot_is_current()) {
-      .ess_plot_show()
-    }
+    # Reset the graphics device if plotting options were changed
+    dev.off(.ess_plot_dev())
+    .ess_plot_new()
+
     if (any(names(result) %in% c("plot.width", "plot.height"))) {
       .ess_plot_pdf_sync_opts()
     }
