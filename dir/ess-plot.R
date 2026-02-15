@@ -1,6 +1,7 @@
 # NOTE this file is sourced by ess-plot--load
 ### Global variables ------
 .ESS_PLOT_MASK. <- !isFALSE(getOption("ess_plot.mask_functions"))
+.ESS_PLOT_METHODS. <- list()
 
 ### Functions ------
 ## Plotting ------
@@ -173,8 +174,16 @@ if (.ESS_PLOT_MASK.) {
     .ess_plot_options(..., .ess_plot_only = FALSE)
   }
 
-  print.ggplot <- function (...) {
-    result <- ggplot2:::print.ggplot(...)
+  print.ggplot <- function(...) {
+    result <- getElement(.ESS_PLOT_METHODS., "print.ggplot")(...)
+    if (.ess_plot_is_current()) {
+      .ess_plot_show()
+    }
+    invisible(result)
+  }
+
+  print.ggplot2 <- function(...) {
+    result <- getElement(.ESS_PLOT_METHODS., "print.ggplot2::ggplot")(...)
     if (.ess_plot_is_current()) {
       .ess_plot_show()
     }
@@ -265,38 +274,36 @@ if (.ESS_PLOT_MASK.) {
 
 ## Environment management ------
 .ess_plot_override_S3_method <- function(method, value) {
-  env <- get(".__S3MethodsTable__.", envir = .BaseNamespaceEnv)
-  if (exists(method, envir = env, inherits = FALSE))
-    assign(method, value, envir = env)
+  s3_table <- get(".__S3MethodsTable__.", envir = .BaseNamespaceEnv)
+  if (exists(method, envir = s3_table, inherits = FALSE)) {
+    # Store the old version so it can be referenced
+    if (!method %in% names(.ESS_PLOT_METHODS.))
+      .ESS_PLOT_METHODS.[[method]] <<- s3_table[[method]]
+    assign(method, value, envir = s3_table)
+  }
   invisible()
 }
 
 # NOTE 'ESSR_plot' is referenced by .ess_plot_env_teardown() & M-x ess-plot-loaded-p
-.ess_plot_env_attach <- function(env = NULL, warn.conflicts = TRUE) {
-  pos <- match("ESSR_plot", search())
-  if (is.null(env)) {
-    if (is.na(pos))
-      stop("ESSR_plot is not currently attached, provide the 'env' argument.")
-    ESSR_plot <- as.environment(pos)
-  } else {
-    ESSR_plot <- env
-  }
+.ess_plot_env_attach <- function(warn.conflicts = TRUE) {
+  # This function's enclosing env is the ESSR_plot env
+  ESSR_plot <- parent.env(environment())
 
-  if (!is.na(pos))
-    detach(pos = pos)
+  if ("ESSR_plot" %in% search())
+    detach("ESSR_plot")
   return_val <- attach(ESSR_plot, warn.conflicts = warn.conflicts)
 
   # NOTE this cannot be performed in the setup functions as it must be
   # re-triggered when ggplot2 is loaded
-  if (.ESS_PLOT_MASK.)
+  if (.ESS_PLOT_MASK.) {
     .ess_plot_override_S3_method("print.ggplot", print.ggplot)
+    .ess_plot_override_S3_method("print.ggplot2::ggplot", print.ggplot2)
+  }
 
   return(return_val)
 }
 
-.ess_plot_env_setup <- function(env = NULL) {
-  .ess_plot_env_teardown()
-
+.ess_plot_env_setup <- function() {
   # Try to stay on top of the packages we are masking
   if (.ESS_PLOT_MASK.) {
     hook_fun <- function(...) {
@@ -307,7 +314,7 @@ if (.ESS_PLOT_MASK.) {
     setHook(packageEvent("ggplot2", "attach"), hook_fun)
   }
 
-  .ess_plot_env_attach(env)
+  .ess_plot_env_attach()
 }
 
 # NOTE used by M-x ess-plot--unload
@@ -316,11 +323,15 @@ if (.ESS_PLOT_MASK.) {
   .ess_plot_stop()
 
   if (.ESS_PLOT_MASK.) {
-    if (isNamespaceLoaded("ggplot2"))
-      .ess_plot_override_S3_method("print.ggplot", ggplot2:::print.ggplot)
     setHook(packageEvent("grDevices", "attach"), NULL, "replace")
     setHook(packageEvent("ggplot2", "attach"), NULL, "replace")
   }
+
+  # Restore S3 methods and reset list
+  for (method in names(.ESS_PLOT_METHODS.)) {
+    .ess_plot_override_S3_method(method, .ESS_PLOT_METHODS.[[method]])
+  }
+  .ESS_PLOT_METHODS. <- list()
 
   if (detach)
     detach("ESSR_plot", character.only = TRUE)
@@ -329,4 +340,4 @@ if (.ESS_PLOT_MASK.) {
 
 
 ### Main ------
-.ess_plot_env_setup(environment())
+.ess_plot_env_setup()
