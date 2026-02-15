@@ -6,14 +6,22 @@
 ## Plotting ------
 # Get index of current plotting device
 .ess_plot_dev <- function() {
-  filename <- getOption("ess_plot.file", default = 0L)
   dev_files <- sapply(.Devices, function(dev) {
     path <- attr(dev, "filepath", exact = TRUE)
     if (is.null(path))
-      return(NA_character_)
+      return(tolower(dev[[1L]]))
     path
   })
-  match(filename, dev_files, nomatch = 0L)
+
+  filename <- getOption("ess_plot.file", default = 0L)
+  if (filename %in% dev_files) {
+    match(filename, dev_files)
+  } else {
+    # Some systems are missing the 'filepath' attribute
+    # Ref: https://github.com/DennieTeMolder/ess-plot/issues/2
+    # Attempt to fall back to top most png device
+    max(0L, which(dev_files == "png"))
+  }
 }
 
 .ess_plot_is_current <- function() {
