@@ -7,6 +7,11 @@
 ## Plotting ------
 # Get index of current plotting device
 .ess_plot_dev <- function() {
+  filename <- getOption("ess_plot.file")
+  if (is.null(filename)) {
+    return(0L)
+  }
+
   dev_files <- sapply(.Devices, function(dev) {
     path <- attr(dev, "filepath", exact = TRUE)
     if (is.null(path))
@@ -14,7 +19,6 @@
     path
   })
 
-  filename <- getOption("ess_plot.file", default = 0L)
   if (filename %in% dev_files) {
     match(filename, dev_files)
   } else {
@@ -42,8 +46,9 @@
 }
 
 .ess_plot_new <- function() {
-  if (.ess_plot_is_current())
+  if (.ess_plot_is_current()) {
     stop("There is already an open plotting device!")
+  }
 
   .ess_plot_check_opts()
   args <- base::options("plot.width", "plot.height", "plot.units", "plot.res")
@@ -53,8 +58,9 @@
   do.call(grDevices::png, c(list(filename = filename), args))
   base::options(ess_plot.file = filename)
 
-  if (!.ess_plot_is_current())
+  if (!.ess_plot_is_current()) {
     stop("Failed to create a plotting device!")
+  }
 
   dev.cur()
 }
@@ -93,8 +99,9 @@
 .ess_plot_stop <- function() {
   idx <- .ess_plot_dev()
   if (idx > 1L) {
-    if (idx != dev.cur())
+    if (idx != dev.cur()) {
       warning("ESS-plot: device closed but another is still active.")
+    }
     dev.off(idx)
   }
 }
@@ -113,10 +120,11 @@
 # NOTE used by M-x ess-plot-show
 .ess_plot_show <- function() {
   # Do noting if plots are not being redirected
-  if (.ess_plot_dev() == 0L)
+  if (.ess_plot_dev() == 0L) {
     return(invisible())
-  if (!.ess_plot_is_current())
+  } else if (!.ess_plot_is_current()) {
     stop("Cannot render plot to Emacs, another plotting device is active!")
+  }
 
   # Close plot to write to disk
   dev.off()
@@ -136,14 +144,16 @@
 
   result <- base::options(...)
   if (is.null(...names())) {
-    if (.ess_plot_only)
+    if (.ess_plot_only) {
       return(result[intersect(names(result), plot_opts)])
+    }
     return(result)
   }
 
-  if (.ess_plot_only && !all(...names() %in% plot_opts))
+  if (.ess_plot_only && !all(...names() %in% plot_opts)) {
     stop("The following options are not recognised: ",
          paste(setdiff(...names(), plot_opts), collapse = ", "))
+  }
 
   if (any(names(result) %in% c("plot.width", "plot.height", "plot.units", "plot.res"))) {
     # Reset the graphics device if plotting options were changed
@@ -277,8 +287,9 @@ if (.ESS_PLOT_MASK.) {
   s3_table <- get(".__S3MethodsTable__.", envir = .BaseNamespaceEnv)
   if (exists(method, envir = s3_table, inherits = FALSE)) {
     # Store the old version so it can be referenced
-    if (!method %in% names(.ESS_PLOT_METHODS.))
+    if (!method %in% names(.ESS_PLOT_METHODS.)) {
       .ESS_PLOT_METHODS.[[method]] <<- s3_table[[method]]
+    }
     assign(method, value, envir = s3_table)
   }
   invisible()
@@ -289,8 +300,9 @@ if (.ESS_PLOT_MASK.) {
   # This function's enclosing env is the ESSR_plot env
   ESSR_plot <- parent.env(environment())
 
-  if ("ESSR_plot" %in% search())
+  if ("ESSR_plot" %in% search()) {
     detach("ESSR_plot")
+  }
   return_val <- attach(ESSR_plot, warn.conflicts = warn.conflicts)
 
   # NOTE this cannot be performed in the setup functions as it must be
@@ -307,8 +319,9 @@ if (.ESS_PLOT_MASK.) {
   # Try to stay on top of the packages we are masking
   if (.ESS_PLOT_MASK.) {
     hook_fun <- function(...) {
-      if ("ESSR_plot" %in% search())
+      if ("ESSR_plot" %in% search()) {
         .ess_plot_env_attach(warn.conflicts = FALSE)
+      }
     }
     setHook(packageEvent("grDevices", "attach"), hook_fun)
     setHook(packageEvent("ggplot2", "attach"), hook_fun)
@@ -331,10 +344,12 @@ if (.ESS_PLOT_MASK.) {
   for (method in names(.ESS_PLOT_METHODS.)) {
     .ess_plot_override_S3_method(method, .ESS_PLOT_METHODS.[[method]])
   }
-  .ESS_PLOT_METHODS. <- list()
+  .ESS_PLOT_METHODS. <<- list()
 
-  if (detach)
+  if (detach) {
     detach("ESSR_plot", character.only = TRUE)
+  }
+
   invisible(detach)
 }
 
