@@ -201,8 +201,8 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
              (string= (file-name-extension (nth 2 event)) "png"))
     (ess-plot--display (find-file-noselect (nth 2 event)))
     (setq ess-plot--file-last (nth 2 event))
-    (when (ess-plot-cleanup-buffers)
-      (message "ESS-plot: updated plot"))))
+    (ess-plot-cleanup-buffers)
+    (message "ESS-plot: updated plot")))
 
 (defun ess-plot--watch-dir (dir)
   "Call `file-notify-add-watch' for change on DIR w/ `ess-plot--file-notify-open'."
