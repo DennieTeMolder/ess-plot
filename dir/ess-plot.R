@@ -292,18 +292,12 @@ if (.ESS_PLOT_MASK.) {
     }
     assign(method, value, envir = s3_table)
   }
-  invisible()
 }
 
 # NOTE 'ESSR_plot' is referenced by .ess_plot_env_teardown() & M-x ess-plot-loaded-p
 .ess_plot_env_attach <- function(warn.conflicts = TRUE) {
   # This function's enclosing env is the ESSR_plot env
   ESSR_plot <- parent.env(environment())
-
-  if ("ESSR_plot" %in% search()) {
-    detach("ESSR_plot")
-  }
-  return_val <- attach(ESSR_plot, warn.conflicts = warn.conflicts)
 
   # NOTE this cannot be performed in the setup functions as it must be
   # re-triggered when ggplot2 is loaded
@@ -312,7 +306,12 @@ if (.ESS_PLOT_MASK.) {
     .ess_plot_override_S3_method("print.ggplot2::ggplot", print.ggplot2)
   }
 
-  return(return_val)
+  # Detach so we can move to the front of the search list
+  if ("ESSR_plot" %in% search()) {
+    detach("ESSR_plot", character.only = TRUE)
+  }
+
+  attach(ESSR_plot, warn.conflicts = warn.conflicts)
 }
 
 .ess_plot_env_setup <- function() {
@@ -349,8 +348,6 @@ if (.ESS_PLOT_MASK.) {
   if (detach) {
     detach("ESSR_plot", character.only = TRUE)
   }
-
-  invisible(detach)
 }
 
 
