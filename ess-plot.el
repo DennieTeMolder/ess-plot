@@ -141,8 +141,8 @@ The visible plot buffers are only killed if KILL-VISIBLE is t."
                   (and win (not kill-visible)))
         (kill-buffer buf)))))
 
-(defun ess-plot-visible-process-buffer ()
-  "Return the first visible ESS process buffer or nil."
+(defun ess-plot-process-window ()
+  "Return the first visible ESS process window or nil."
   (cl-some (lambda (win) (with-selected-window win
                            (when-let ((buf (ess-get-current-process-buffer)))
                              (get-buffer-window buf))))
@@ -164,11 +164,11 @@ Defaults to the first visible frame."
            (ess-plot--window-search-list)))
 
 (defun ess-plot-display-default (buf)
-  "Display BUF in `ess-plot-window', else split `ess-plot-visible-process-buffer'.
+  "Display BUF in `ess-plot-window', else split `ess-plot-process-window'.
 If both are nil `display-buffer' is used as fallback."
   (let ((win (ess-plot-window)))
     (and (not win)
-         (setq win (ess-plot-visible-process-buffer))
+         (setq win (ess-plot-process-window))
          (if (caar (window--subtree (window-parent win)))
              (setq win (split-window-right nil win))
            (setq win (split-window-below nil win))))
