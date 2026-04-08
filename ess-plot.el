@@ -60,15 +60,15 @@
 Will be created if it doesn't exist.")
 
 (defvar ess-plot-window-show-on-startup nil
-  "Controls whether `ess-plot-start' immediately creates the plot window.
-If nil, the plot window will be created when a new plot is rendered.
+  "If non-nil a placeholder plot window is created by `ess-plot-start'.
+If nil the plot window is only created when the first plot is displayed.
 Also indirectly affects `ess-plot-toggle' and `ess-plot-on-startup-h'.")
 
 (defvar ess-plot-display-function #'ess-plot-display-default
   "Function used to display new plot buffers.
-The function should take the buffer to display as the only argument and
-should return the window used to display the buffer. Example values
-include: `ess-plot-display-default' or `display-buffer'.")
+The function should take the buffer to display as the only argument,
+display the buffer, and return the window used to display the buffer.
+Example values include: `ess-plot-display-default' or `display-buffer'.")
 
 (defvar ess-plot-placeholder-name "*R plot*"
   "Name of the placeholder plot buffer.")
@@ -83,14 +83,14 @@ place of .ess_plot_show() and options() in place of .ess_plot_options(),
 which enables controlling ess-plot using code that can be run by non
 ess-plot users. Furthermore, this setting also enables automatic
 rendering of ggplots and synchronises plot dimensions with ggsave() and
-png/jpeg/bmp/tiff/svg(). Dimensions for pdf() are always synchronised
+png/jpeg/bmp/tiff/svg(). Dimensions for pdf() are always synchronized
 when using .ess_plot_options().")
 
 (defvar ess-plot--source-dir
   (file-name-directory (file-truename (or load-file-name buffer-file-name)))
   "Source directory containing ess-plot.el(c) and the dir/ folder.")
 
-;; NOTE In Emacs29+ `file-notify-descriptors' is cleared when the dir is deleted
+;; NOTE On Emacs29+ `file-notify-descriptors' is cleared when `ess-plot-dir' is deleted
 (defvar ess-plot--descriptor nil
   "File notify descriptor watching `ess-plot-dir'.")
 
