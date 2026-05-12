@@ -22,4 +22,4 @@ plot(economics$date, economics$unemploy)
 dev.flush()
 
 hist(economics$unemploy)
-dev.flush()
+#@ess-plot-show

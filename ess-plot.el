@@ -194,6 +194,14 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
     (when show-placeholder
       (ess-plot--display (ess-plot--placeholder)))))
 
+(defun ess-plot-replace-show-cookie (string)
+  "Replace \"#@ess-plot-show\" cookies in STRING to trigger `ess-plot-show'.
+Placed into `ess-presend-filter-functions' for R dialects."
+  (replace-regexp-in-string
+   (rx (seq (? "\n") (* space) "#@ess-plot-show" (* space) eol))
+   "\ntry(.ess_plot_show(), silent = TRUE)"
+   string))
+
 ;;* File watcher
 (defun ess-plot--file-notify-open (event)
   "Display the .png file created by EVENT in `ess-plot-window'."
@@ -270,7 +278,8 @@ Intended for `kill-buffer-hook'."
   (ess-plot--load)
   (ess-plot--watcher-start)
   (with-current-buffer (ess-get-current-process-buffer)
-    (add-hook 'kill-buffer-hook #'ess-plot--kill-buffer-h nil 'local))
+    (add-hook 'kill-buffer-hook #'ess-plot--kill-buffer-h nil 'local)
+    (add-hook 'ess-presend-filter-functions #'ess-plot-replace-show-cookie nil 'local))
   (ess-eval-linewise (format ".ess_plot_start('%s')\n" ess-plot-dir)
                      "Redirecting plots to Emacs")
   (when ess-plot-window-show-on-startup
