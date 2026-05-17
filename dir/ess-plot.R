@@ -156,9 +156,11 @@
   }
 
   if (any(names(result) %in% c("plot.width", "plot.height", "plot.units", "plot.res"))) {
-    # Reset the graphics device if plotting options were changed
-    dev.off(.ess_plot_dev())
-    .ess_plot_new()
+    if (.ess_plot_is_current()) {
+      # Reset the graphics device if plotting options were changed
+      dev.off()
+      .ess_plot_new()
+    }
 
     if (any(names(result) %in% c("plot.width", "plot.height"))) {
       .ess_plot_pdf_sync_opts()
