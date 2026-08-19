@@ -267,8 +267,8 @@ Intended for `kill-buffer-hook'."
 (defun ess-plot--unload ()
   "Detach ess-plot from `ess-local-process-name' and stop redirecting plots."
   (when (ess-plot-loaded-p)
-    (ess-eval-linewise ".ess_plot_env_teardown(detach = TRUE)\n"
-                       "Detaching ESS-plot functions" nil nil 'wait-last-prompt)
+    (with-temp-message "Detaching ESS-plot functions..."
+      (ess-command ".ess_plot_env_teardown(detach = TRUE)"))
     (when (ess-plot-loaded-p)
       (user-error "ESS-plot: failed to unload R code from process: %s"
                   ess-local-process-name))))
@@ -284,8 +284,9 @@ Intended for `kill-buffer-hook'."
   (with-current-buffer (ess-get-current-process-buffer)
     (add-hook 'kill-buffer-hook #'ess-plot--kill-buffer-h nil 'local)
     (add-hook 'ess-presend-filter-functions #'ess-plot-replace-show-cookie nil 'local))
-  (ess-eval-linewise (format ".ess_plot_start('%s')\n" ess-plot-dir)
-                     "Redirecting plots to Emacs")
+  (ess-send-string (ess-get-process)
+                   (format ".ess_plot_start('%s')" ess-plot-dir)
+                   'nowait)
   (when ess-plot-window-show-on-startup
     (ess-plot--show-last 'show-placeholder))
   (message "ESS-plot: started displaying plots")
@@ -321,9 +322,7 @@ Intended for `kill-buffer-hook'."
   (unless (ess-plot-loaded-p)
     (user-error "ESS-plot: not loaded in process '%s', call M-x ess-plot-toggle"
                 ess-local-process-name))
-  (ess-eval-linewise ".ess_plot_show()\n" "M-x ess-plot-show" nil nil 'wait-last-prompt)
-  (unless (ess-plot--show-last)
-    (user-error "ESS-plot: no plots to display")))
+  (ess-send-string (ess-get-process) ".ess_plot_show()" 'nowait))
 
 ;;;###autoload
 (defun ess-plot-hide ()
