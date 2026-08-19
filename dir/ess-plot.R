@@ -132,7 +132,9 @@
   # Move plot file to trigger the filewatcher
   plot_file <- getOption("ess_plot.file")
   if (file.exists(plot_file)) {
-    file.rename(plot_file, .ess_plot_make_filename())
+    # file.rename() cannot move between mounts, this can
+    file.copy(plot_file, .ess_plot_make_filename())
+    file.remove(plot_file)
   }
 
   # Open a new plot
