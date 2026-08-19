@@ -212,6 +212,7 @@ Placed into `ess-presend-filter-functions' for R dialects."
     (ess-plot-cleanup-buffers)
     (message "ESS-plot: updated plot")))
 
+;; REVIEW: file watchers don't work for network mounted drives and remotes
 (defun ess-plot--watch-dir (dir)
   "Call `file-notify-add-watch' for change on DIR w/ `ess-plot--file-notify-open'."
   (file-notify-add-watch (file-name-as-directory dir)
@@ -244,18 +245,21 @@ Intended for `kill-buffer-hook'."
                      (remq (current-buffer) (buffer-list)))
       (ess-plot--watcher-stop))))
 
-;; REVIEW Can we add remote support like in `ess-r-load-ESSR'?
 (defun ess-plot--load ()
-  "Attach ess-plot to `ess-local-process-name' and start redirecting plots."
+  "Load the ess-plot library into `ess-local-process-name'."
   (unless (ess-plot-loaded-p)
     (unless (string= "R" (ess-get-process-variable 'ess-dialect))
       (error "ESS-plot currently only supports the 'R' dialect"))
-    (let ((cmd (format (concat "base::options(ess_plot.mask_functions=%s)\n"
-                               "base::local(base::source('%s', local=TRUE))\n")
+    (let ((cmd (format (concat "{"      ; Avoid intermediate prompts
+                               "base::options(ess_plot.mask_functions=%s)\n"
+                               "base::local({%s})"
+                               "}")
                        (if (ess-get-process-variable 'ess-plot-mask-functions)
                            "TRUE" "FALSE")
-                       (expand-file-name "dir/ess-plot.R" ess-plot--source-dir))))
-      (ess-eval-linewise cmd "Attaching ESS-plot functions" nil nil 'wait-last-prompt))
+                       (ess-file-content (expand-file-name "dir/ess-plot.R"
+                                                           ess-plot--source-dir)))))
+      (with-temp-message "Attaching ESS-plot functions..."
+        (ess-command cmd)))
     (unless (ess-plot-loaded-p)
       (error "ESS-plot: failed to load R code into process: %s"
              ess-local-process-name))))
