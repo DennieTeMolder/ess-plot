@@ -4,7 +4,7 @@
 
 ;; Author: Dennie te Molder
 ;; Created: 30-8-2023
-;; Version: 0.2.1
+;; Version: 0.2.2
 ;; URL: https://github.com/DennieTeMolder/ess-plot
 ;; Package-Requires: ((emacs "26.1") (ess "18.10.1"))
 ;; Keywords: tools ESS R plot dedicated window
@@ -70,6 +70,12 @@ The function should take the buffer to display as the only argument,
 display the buffer, and return the window used to display the buffer.
 Example values include: `ess-plot-display-default' or `display-buffer'.")
 
+(defvar ess-plot-transform-function nil
+  "Function used to transform plot file paths before display.
+The function should take the path of the plot file as the only argument
+and return the transformed path.
+Useful if the R process lives on a remote.")
+
 (defvar ess-plot-placeholder-name "*R plot*"
   "Name of the placeholder plot buffer.")
 
@@ -89,10 +95,6 @@ when using .ess_plot_options().")
 (defvar ess-plot--source-dir
   (file-name-directory (file-truename (or load-file-name buffer-file-name)))
   "Source directory containing ess-plot.el(c) and the dir/ folder.")
-
-;; NOTE On Emacs29+ `file-notify-descriptors' is cleared when `ess-plot-dir' is deleted
-(defvar ess-plot--descriptor nil
-  "File notify descriptor watching `ess-plot-dir'.")
 
 (defvar ess-plot--file-last nil
   "Most recent ESS plot file.")
@@ -163,6 +165,7 @@ Defaults to the first visible frame."
   (cl-some (lambda (win) (and (ess-plot-buffer-p (window-buffer win)) win))
            (ess-plot--window-search-list)))
 
+;;* Plot display
 (defun ess-plot-display-default (buf)
   "Display BUF in `ess-plot-window', else split `ess-plot-process-window'.
 If both are nil `display-buffer' is used as fallback."
@@ -177,74 +180,63 @@ If both are nil `display-buffer' is used as fallback."
           (get-buffer-window (pop-to-buffer-same-window buf)))
       (display-buffer buf))))
 
-(defun ess-plot--display (buf)
-  "Call `ess-plot-display-function' and `image-transform-fit-both' on BUF."
-  (prog1 (funcall ess-plot-display-function buf)
+(defun ess-plot--display (file-or-buf)
+  "Display FILE-OR-BUF using `ess-plot-display-function'.
+Also invokes `image-transform-fit-both'."
+  (let* ((buf (if (bufferp file-or-buf) file-or-buf
+                (find-file-noselect file-or-buf)))
+         (win (funcall ess-plot-display-function buf)))
     (when (fboundp 'image-transform-fit-both)
       (with-current-buffer buf
         (when (eq major-mode 'image-mode)
-          (image-transform-fit-both))))))
+          (image-transform-fit-both))))
+    (ess-plot-cleanup-buffers)
+    win))
+
+(defun ess-plot--re-extract-backward (regex group str)
+  "Extract GROUP from REGEX for the last match in STR."
+  (with-temp-buffer
+    (insert str)
+    (goto-char (point-max))
+    (when (let ((case-fold-search)) (re-search-backward regex nil 'noerror))
+      (match-string group))))
+
+(defun ess-plot--transform (path)
+  "Apply `ess-plot-transform-function' to PATH."
+  (if (functionp ess-plot-transform-function)
+      (funcall ess-plot-transform-function path)
+    path))
+
+(defun ess-plot--output-filter (str)
+  "Filter STR for ess-plot(display) cookies to trigger `ess-plot--display'."
+  (let* ((regex (rx (seq "#@ess-plot(display):" (group (+ nonl)) "@#\n")))
+         (match (ess-plot--re-extract-backward regex 1 str)))
+    (if match
+        (save-current-buffer
+          (ess-plot--display (setq ess-plot--file-last
+                                   (ess-plot--transform match)))
+          (message "ESS-plot: updated plot")
+          (replace-regexp-in-string regex "" str))
+      str)))
+
+(defun ess-plot--replace-show-cookie (str)
+  "Replace \"#@ess-plot-show\" cookies in STR to trigger `ess-plot-show'.
+Placed into `ess-presend-filter-functions' for R dialects."
+  (replace-regexp-in-string
+   (rx (seq (? "\n") (* space) "#@ess-plot-show" (* space) eol))
+   "\ntry(.ess_plot_show(), silent = TRUE)"
+   str))
 
 (defun ess-plot--show-last (&optional show-placeholder)
   "Display `ess-plot--file-last' in `ess-plot-window' creating it if needed.
 If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
 `ess-plot--file-last' is nil."
   (if ess-plot--file-last
-      (ess-plot--display (find-file-noselect ess-plot--file-last))
+      (ess-plot--display ess-plot--file-last)
     (when show-placeholder
       (ess-plot--display (ess-plot--placeholder)))))
 
-(defun ess-plot-replace-show-cookie (string)
-  "Replace \"#@ess-plot-show\" cookies in STRING to trigger `ess-plot-show'.
-Placed into `ess-presend-filter-functions' for R dialects."
-  (replace-regexp-in-string
-   (rx (seq (? "\n") (* space) "#@ess-plot-show" (* space) eol))
-   "\ntry(.ess_plot_show(), silent = TRUE)"
-   string))
-
-;;* File watcher
-(defun ess-plot--file-notify-open (event)
-  "Display the .png file created by EVENT in `ess-plot-window'."
-  (when (and (eq 'created (nth 1 event))
-             (string= (file-name-extension (nth 2 event)) "png"))
-    (ess-plot--display (find-file-noselect (nth 2 event)))
-    (setq ess-plot--file-last (nth 2 event))
-    (ess-plot-cleanup-buffers)
-    (message "ESS-plot: updated plot")))
-
-;; REVIEW: file watchers don't work for network mounted drives and remotes
-(defun ess-plot--watch-dir (dir)
-  "Call `file-notify-add-watch' for change on DIR w/ `ess-plot--file-notify-open'."
-  (file-notify-add-watch (file-name-as-directory dir)
-                         '(change)
-                         #'ess-plot--file-notify-open))
-
-(defun ess-plot--watcher-start ()
-  "Start the file watcher for `ess-plot-dir' that will display new plots."
-  (unless ess-plot-dir
-    (error "`ess-plot-dir' is unset"))
-  (unless ess-plot--descriptor
-    (make-directory ess-plot-dir t)
-    (setq ess-plot--descriptor (ess-plot--watch-dir ess-plot-dir))))
-
-(defun ess-plot--watcher-stop ()
-  "Stop file watcher corresponding to `ess-plot--descriptor' and `ess-plot-dir'."
-  (when ess-plot--descriptor
-    (file-notify-rm-watch ess-plot--descriptor)
-    (setq ess-plot--descriptor nil))
-  (ess-plot-cleanup-buffers 'kill-visible))
-
 ;;* State management
-(defun ess-plot--kill-buffer-h ()
-  "Call `ess-plot--watcher-stop' if no other buffers have this hook.
-Intended for `kill-buffer-hook'."
-  (when ess-plot--descriptor
-    (unless (cl-some (lambda (buf)
-                       (memq 'ess-plot--kill-buffer-h
-                             (buffer-local-value 'kill-buffer-hook buf)))
-                     (remq (current-buffer) (buffer-list)))
-      (ess-plot--watcher-stop))))
-
 (defun ess-plot--load ()
   "Load the ess-plot library into `ess-local-process-name'."
   (unless (ess-plot-loaded-p)
@@ -280,10 +272,9 @@ Intended for `kill-buffer-hook'."
   (interactive)
   (ess-force-buffer-current)
   (ess-plot--load)
-  (ess-plot--watcher-start)
   (with-current-buffer (ess-get-current-process-buffer)
-    (add-hook 'kill-buffer-hook #'ess-plot--kill-buffer-h nil 'local)
-    (add-hook 'ess-presend-filter-functions #'ess-plot-replace-show-cookie nil 'local))
+    (add-hook 'comint-preoutput-filter-functions #'ess-plot--output-filter nil 'local)
+    (add-hook 'ess-presend-filter-functions #'ess-plot--replace-show-cookie nil 'local))
   (ess-send-string (ess-get-process)
                    (format ".ess_plot_start('%s')" ess-plot-dir)
                    'nowait)

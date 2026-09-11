@@ -129,12 +129,17 @@
   # Close plot to write to disk
   dev.off()
 
-  # Move plot file to trigger the filewatcher
-  plot_file <- getOption("ess_plot.file")
-  if (file.exists(plot_file)) {
+  # Move plot file and instruct ess_plot.el to display it
+  temp_file <- getOption("ess_plot.file")
+  if (file.exists(temp_file)) {
+    plot_file <- .ess_plot_make_filename()
+
     # file.rename() cannot move between mounts, this can
-    file.copy(plot_file, .ess_plot_make_filename())
-    file.remove(plot_file)
+    file.copy(temp_file, plot_file)
+    file.remove(temp_file)
+
+    # NOTE detected by ess-plot--display-filter
+    cat("#@ess-plot(display):", plot_file, "@#\n", sep = "")
   }
 
   # Open a new plot
