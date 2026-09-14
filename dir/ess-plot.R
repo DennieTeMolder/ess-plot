@@ -45,6 +45,17 @@
   }
 }
 
+.ess_plot_make_filename <- function() {
+  plot_dir <- getOption("ess_plot.dir", default = "")
+  if (!dir.exists(plot_dir)) {
+    stop("ESS-plot directory does not exist: '", plot_dir, "'")
+  }
+
+  timestamp <- sub("\\.", "_", format(Sys.time(), "%Y%m%d_%H%M%OS3"))
+  session_id <- gsub(".*Rtmp([^/\\])", "R\\1", tempdir())
+  file.path(plot_dir, paste0(session_id, "_", timestamp, ".png"))
+}
+
 .ess_plot_new <- function() {
   if (.ess_plot_is_current()) {
     stop("There is already an open plotting device!")
@@ -107,17 +118,6 @@
     }
     return_value
   }
-}
-
-.ess_plot_make_filename <- function() {
-  plot_dir <- getOption("ess_plot.dir", default = "")
-  if (!dir.exists(plot_dir)) {
-    stop("ESS-plot directory does not exist: '", plot_dir, "'")
-  }
-
-  timestamp <- sub("\\.", "", format(Sys.time(), "%Y%m%d_%H%M%OS3"))
-  session_id <- gsub(".*Rtmp([^/\\])", "R\\1", tempdir())
-  file.path(plot_dir, paste0(timestamp, "_", session_id, ".png"))
 }
 
 # NOTE used by M-x ess-plot-show
