@@ -120,6 +120,12 @@ when using .ess_plot_options().")
       (current-buffer))))
 
 ;;* Buffer management
+(defun ess-plot--dir-ensure ()
+  "Check and create `ess-plot-dir'."
+  (unless ess-plot-dir
+    (error "`ess-plot-dir' is nil"))
+  (make-directory ess-plot-dir 'parents))
+
 (defun ess-plot--placeholder ()
   "Return the placeholder buffer based on `ess-plot-placeholder-name'."
   (with-current-buffer (get-buffer-create ess-plot-placeholder-name)
@@ -271,16 +277,17 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
   "Start displaying plots inside of Emacs for `ess-local-process-name'."
   (interactive)
   (ess-force-buffer-current)
+  (ess-plot--dir-ensure)
   (ess-plot--load)
-  (with-current-buffer (ess-get-current-process-buffer)
-    (add-hook 'comint-preoutput-filter-functions #'ess-plot--output-filter nil 'local)
-    (add-hook 'ess-presend-filter-functions #'ess-plot--replace-show-cookie nil 'local))
   (ess-send-string (ess-get-process)
                    (format ".ess_plot_start('%s')" ess-plot-dir)
                    'nowait)
+  (with-current-buffer (ess-get-current-process-buffer)
+    (add-hook 'comint-preoutput-filter-functions #'ess-plot--output-filter nil 'local)
+    (add-hook 'ess-presend-filter-functions #'ess-plot--replace-show-cookie nil 'local))
   (when ess-plot-window-show-on-startup
     (ess-plot--show-last 'show-placeholder))
-  (message "ESS-plot: started displaying plots")
+  (message "ESS-plot: started displaying plots for %s" ess-local-process-name)
   ess-plot-dir)
 
 (defun ess-plot-stop ()
@@ -288,7 +295,10 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
   (interactive)
   (ess-force-buffer-current)
   (ess-plot--unload)
-  (message "ESS-plot: stopped displaying plots"))
+  (with-current-buffer (ess-get-current-process-buffer)
+    (remove-hook 'comint-preoutput-filter-functions #'ess-plot--output-filter 'local)
+    (remove-hook 'ess-presend-filter-functions #'ess-plot--replace-show-cookie 'local))
+  (message "ESS-plot: stopped displaying plots for %s" ess-local-process-name))
 
 ;;;###autoload
 (defun ess-plot-toggle ()
