@@ -149,13 +149,6 @@ The visible plot buffers are only killed if KILL-VISIBLE is t."
                   (and win (not kill-visible)))
         (kill-buffer buf)))))
 
-(defun ess-plot-process-window ()
-  "Return the first visible ESS process window or nil."
-  (cl-some (lambda (win) (with-selected-window win
-                           (when-let ((buf (ess-get-current-process-buffer)))
-                             (get-buffer-window buf))))
-           (window-list-1 nil 'ignore-minibuffer 'visible)))
-
 ;;* Window management
 (defun ess-plot--window-search-list (&optional frame)
   "Return the non-minibuffer windows of all visible frames in a consistent order.
@@ -172,6 +165,13 @@ Defaults to the first visible frame."
            (ess-plot--window-search-list)))
 
 ;;* Plot display
+(defun ess-plot-process-window ()
+  "Return the first visible ESS process window or nil."
+  (cl-some (lambda (win) (with-selected-window win
+                           (when-let ((buf (ess-get-current-process-buffer)))
+                             (get-buffer-window buf))))
+           (ess-plot--window-search-list)))
+
 (defun ess-plot-display-default (buf)
   "Display BUF in `ess-plot-window', else split `ess-plot-process-window'.
 If both are nil `display-buffer' is used as fallback."
@@ -265,8 +265,11 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
 (defun ess-plot--unload ()
   "Detach ess-plot from `ess-local-process-name' and stop redirecting plots."
   (when (ess-plot-loaded-p)
-    (with-temp-message "Detaching ESS-plot functions..."
-      (ess-command ".ess_plot_env_teardown(detach = TRUE)"))
+    (ess-send-string (ess-get-process)
+                     ".ess_plot_env_teardown(detach = TRUE)"
+                     t
+                     "Detaching ESS-plot functions...")
+    (ess-wait-for-process)
     (when (ess-plot-loaded-p)
       (user-error "ESS-plot: failed to unload R code from process: %s"
                   ess-local-process-name))))

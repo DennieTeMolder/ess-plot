@@ -99,10 +99,13 @@
 .ess_plot_stop <- function() {
   idx <- .ess_plot_dev()
   if (idx > 1L) {
-    if (idx != dev.cur()) {
+    is_cur <- idx == dev.cur()
+    return_value <- dev.off(idx)
+    message("Stopped redirecting graphics to Emacs.")
+    if (!is_cur) {
       warning("ESS-plot: device closed but another is still active.")
     }
-    dev.off(idx)
+    return_value
   }
 }
 
