@@ -92,6 +92,13 @@ rendering of ggplots and synchronises plot dimensions with ggsave() and
 png/jpeg/bmp/tiff/svg(). Dimensions for pdf() are always synchronized
 when using .ess_plot_options().")
 
+(defvar ess-plot-before-start-hook nil
+  "Hook run in process buffer after `ess-plot--load' but before starting capture.
+
+Runs before passing `ess-plot-dir' so it can be changed buffer locally.
+In that case make sure `ess-plot-transform-function' moves the plot file to
+the `default-value' of `ess-plot-dir' to ensure it is correctly recognized.")
+
 (defvar ess-plot--source-dir
   (file-name-directory (file-truename (or load-file-name buffer-file-name)))
   "Source directory containing ess-plot.el(c) and the dir/ folder.")
@@ -119,13 +126,39 @@ when using .ess_plot_options().")
                    (memq major-mode ess-plot-buffer-modes)))
       (current-buffer))))
 
-;;* Buffer management
-(defun ess-plot--dir-ensure ()
+;;* Helper functions
+(defun ess-plot--ensure-dir ()
   "Check and create `ess-plot-dir'."
   (unless ess-plot-dir
     (error "`ess-plot-dir' is nil"))
   (make-directory ess-plot-dir 'parents))
 
+(defun ess-plot--ensure-loaded ()
+  "Raise an error if not `ess-plot-loaded-p'."
+  (unless (ess-plot-loaded-p)
+    (user-error "ESS-plot: not loaded in process '%s', call M-x ess-plot-toggle"
+                ess-local-process-name)))
+
+(defun ess-plot--ensure-proc ()
+  "Ensure `ess-local-process-name' is set."
+  (let ((ess-dialect (or ess-dialect "R")))
+    (ess-force-buffer-current)))
+
+(defun ess-plot--read-string (what default)
+  "ESS-plot specific wrapper for `read-string' takes strings WHAT and DEFAULT."
+  (when-let* ((prompt (format "ESS-plot %s: " what))
+              (answer (string-trim (read-string prompt default))))
+    (unless (string-empty-p answer) answer)))
+
+(defun ess-plot--re-extract-backward (regex group str)
+  "Extract GROUP from REGEX for the last match in STR."
+  (with-temp-buffer
+    (insert str)
+    (goto-char (point-max))
+    (when (let ((case-fold-search)) (re-search-backward regex nil 'noerror))
+      (match-string group))))
+
+;;* Buffer management
 (defun ess-plot--placeholder ()
   "Return the placeholder buffer based on `ess-plot-placeholder-name'."
   (with-current-buffer (get-buffer-create ess-plot-placeholder-name)
@@ -199,14 +232,6 @@ Also invokes `image-transform-fit-both'."
     (ess-plot-cleanup-buffers)
     win))
 
-(defun ess-plot--re-extract-backward (regex group str)
-  "Extract GROUP from REGEX for the last match in STR."
-  (with-temp-buffer
-    (insert str)
-    (goto-char (point-max))
-    (when (let ((case-fold-search)) (re-search-backward regex nil 'noerror))
-      (match-string group))))
-
 (defun ess-plot--transform (path)
   "Apply `ess-plot-transform-function' to PATH."
   (if (functionp ess-plot-transform-function)
@@ -265,7 +290,7 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
 (defun ess-plot--unload ()
   "Detach ess-plot from `ess-local-process-name' and stop redirecting plots."
   (when (ess-plot-loaded-p)
-    (ess-send-string (ess-get-process)
+    (ess-send-string (ess-get-current-process)
                      ".ess_plot_env_teardown(detach = TRUE)"
                      t
                      "Detaching ESS-plot functions...")
@@ -279,13 +304,13 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
 (defun ess-plot-start ()
   "Start displaying plots inside of Emacs for `ess-local-process-name'."
   (interactive)
-  (ess-force-buffer-current)
-  (ess-plot--dir-ensure)
+  (ess-plot--ensure-proc)
   (ess-plot--load)
-  (ess-send-string (ess-get-process)
-                   (format ".ess_plot_start('%s')" ess-plot-dir)
-                   'nowait)
   (with-current-buffer (ess-get-current-process-buffer)
+    (save-current-buffer (run-hooks 'ess-plot-before-start-hook))
+    (ess-plot--ensure-dir)
+    (let ((cmd (format ".ess_plot_start('%s')" ess-plot-dir)))
+      (ess-send-string (ess-get-current-process) cmd 'nowait))
     (add-hook 'comint-preoutput-filter-functions #'ess-plot--output-filter nil 'local)
     (add-hook 'ess-presend-filter-functions #'ess-plot--replace-show-cookie nil 'local))
   (when ess-plot-window-show-on-startup
@@ -296,7 +321,7 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
 (defun ess-plot-stop ()
   "Stop displaying plots inside of Emacs for `ess-local-process-name'."
   (interactive)
-  (ess-force-buffer-current)
+  (ess-plot--ensure-proc)
   (ess-plot--unload)
   (with-current-buffer (ess-get-current-process-buffer)
     (remove-hook 'comint-preoutput-filter-functions #'ess-plot--output-filter 'local)
@@ -307,7 +332,7 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
 (defun ess-plot-toggle ()
   "Toggle displaying ESS plots inside of Emacs."
   (interactive)
-  (ess-force-buffer-current)
+  (ess-plot--ensure-proc)
   (if (ess-plot-loaded-p)
       (ess-plot-stop)
     (ess-plot-start)))
@@ -322,11 +347,9 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
 (defun ess-plot-show ()
   "Force the current plot to be drawn on screen."
   (interactive)
-  (ess-force-buffer-current)
-  (unless (ess-plot-loaded-p)
-    (user-error "ESS-plot: not loaded in process '%s', call M-x ess-plot-toggle"
-                ess-local-process-name))
-  (ess-send-string (ess-get-process) ".ess_plot_show()" 'nowait))
+  (ess-plot--ensure-proc)
+  (ess-plot--ensure-loaded)
+  (ess-send-string (ess-get-current-process) ".ess_plot_show()" 'nowait))
 
 ;;;###autoload
 (defun ess-plot-hide ()
