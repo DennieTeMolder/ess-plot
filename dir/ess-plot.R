@@ -86,9 +86,12 @@
     stop("Another graphics devices is already active! Run `dev.off()` until the result is 1.")
   }
 
+  plot_dir <- normalizePath(plot_dir, mustWork = FALSE)
+  dir.create(plot_dir, showWarnings = FALSE, recursive = TRUE, mode = "0700")
+
   # Set options required for plotting
   base::options(
-    "ess_plot.dir" = normalizePath(plot_dir),
+    "ess_plot.dir" = plot_dir,
     "plot.width" = width,
     "plot.height" = height,
     "plot.units" = units,

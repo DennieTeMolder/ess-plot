@@ -115,14 +115,15 @@ the `default-value' of `ess-plot-dir' to ensure it is correctly recognized.")
 
 (defun ess-plot-file-p (file)
   "Return non-nil if FILE is an ESS plot."
-  (when ess-plot-dir (string-prefix-p ess-plot-dir file)))
+  (when-let* ((dir (default-value 'ess-plot-dir)))
+    (string-prefix-p dir file)))
 
 (defun ess-plot-buffer-p (&optional buf)
   "Return BUF if it displays an ESS plot. Defaults to `current-buffer'."
   (with-current-buffer (or buf (current-buffer))
     (when (or (string= (buffer-name) ess-plot-placeholder-name)
               (and default-directory
-                   (string= ess-plot-dir default-directory)
+                   (string= default-directory (default-value 'ess-plot-dir))
                    (memq major-mode ess-plot-buffer-modes)))
       (current-buffer))))
 
@@ -130,8 +131,7 @@ the `default-value' of `ess-plot-dir' to ensure it is correctly recognized.")
 (defun ess-plot--ensure-dir ()
   "Check and create `ess-plot-dir'."
   (unless ess-plot-dir
-    (error "`ess-plot-dir' is nil"))
-  (make-directory ess-plot-dir 'parents))
+    (error "`ess-plot-dir' is nil")))
 
 (defun ess-plot--ensure-loaded ()
   "Raise an error if not `ess-plot-loaded-p'."
@@ -162,7 +162,7 @@ the `default-value' of `ess-plot-dir' to ensure it is correctly recognized.")
 (defun ess-plot--placeholder ()
   "Return the placeholder buffer based on `ess-plot-placeholder-name'."
   (with-current-buffer (get-buffer-create ess-plot-placeholder-name)
-    (setq-local default-directory ess-plot-dir)
+    (setq-local default-directory (default-value 'ess-plot-dir))
     (current-buffer)))
 
 (defun ess-plot-buffers ()
@@ -307,7 +307,7 @@ Placed into `ess-presend-filter-functions' for R dialects."
   (when ess-plot-window-show-on-startup
     (ess-plot-display-last 'show-placeholder))
   (message "ESS-plot: started displaying plots for %s" ess-local-process-name)
-  ess-plot-dir)
+  ess-local-process-name)
 
 (defun ess-plot-stop ()
   "Stop displaying plots inside of Emacs for `ess-local-process-name'."
