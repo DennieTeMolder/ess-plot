@@ -244,8 +244,8 @@ Also invokes `image-transform-fit-both'."
          (match (ess-plot--re-extract-backward regex 1 str)))
     (if match
         (save-current-buffer
-          (ess-plot--display (setq ess-plot--file-last
-                                   (ess-plot--transform match)))
+          (ess-plot--display
+           (setq-local ess-plot--file-last (ess-plot--transform match)))
           (message "ESS-plot: updated plot")
           (replace-regexp-in-string regex "" str))
       str)))

@@ -45,15 +45,16 @@
   }
 }
 
-.ess_plot_make_filename <- function() {
+.ess_plot_make_filename <- function(hidden = FALSE) {
   plot_dir <- getOption("ess_plot.dir", default = "")
   if (!dir.exists(plot_dir)) {
     stop("ESS-plot directory does not exist: '", plot_dir, "'")
   }
 
-  timestamp <- sub("\\.", "_", format(Sys.time(), "%Y%m%d_%H%M%OS3"))
+  prefix <- if (hidden) "."
   session_id <- gsub(".*Rtmp([^/\\])", "R\\1", tempdir())
-  file.path(plot_dir, paste0(session_id, "_", timestamp, ".png"))
+  timestamp <- sub("\\.", "_", format(Sys.time(), "%Y%m%d_%H%M%OS3"))
+  file.path(plot_dir, paste0(prefix, session_id, "_", timestamp, ".png"))
 }
 
 .ess_plot_new <- function() {
@@ -65,7 +66,7 @@
   args <- base::options("plot.width", "plot.height", "plot.units", "plot.res")
   names(args) <- c("width", "height", "units", "res")
 
-  filename <- .ess_plot_make_filename()
+  filename <- .ess_plot_make_filename(hidden = TRUE)
   do.call(grDevices::png, c(list(filename = filename), args))
   base::options(ess_plot.file = filename)
 
