@@ -82,7 +82,7 @@ Useful if the R process lives on a remote.")
 (defvar ess-plot-buffer-modes '(image-mode dired-mode)
   "Modes used by `ess-plot-buffer-p' to discern buffers managed by ess-plot.")
 
-(defvar ess-plot-mask-functions t
+(defvar ess-plot-mask-functions-p t
   "Whether to mask specific R functions for enhanced UX.
 With this enabled you can call the built-in functions dev.flush() in
 place of .ess_plot_show() and options() in place of .ess_plot_options(),
@@ -268,7 +268,7 @@ Placed into `ess-presend-filter-functions' for R dialects."
                                "base::options(ess_plot.mask_functions=%s)\n"
                                "base::local({%s})"
                                "}")
-                       (if (ess-get-process-variable 'ess-plot-mask-functions)
+                       (if (ess-get-process-variable 'ess-plot-mask-functions-p)
                            "TRUE" "FALSE")
                        (ess-file-content (expand-file-name "dir/ess-plot.R"
                                                            ess-plot--source-dir)))))
