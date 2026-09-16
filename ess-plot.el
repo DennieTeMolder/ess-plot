@@ -377,6 +377,26 @@ Unless NO-KILL is non-nil the other plot windows are killed."
     (let ((ess-plot-display-function #'pop-to-buffer-same-window))
       (ess-plot-display-last 'show-placeholder))))
 
+;;;###autoload
+(defun ess-plot-options (&optional width height units res)
+  "Interactively set ESS-plot dimensions and resolution (WIDTH HEIGHT UNITS RES)."
+  (interactive (progn
+                 (ess-plot--ensure-proc)
+                 (ess-plot--ensure-loaded)
+                 (list (ess-plot--read-string "width" "7")
+                       (ess-plot--read-string "height" "5")
+                       (ess-plot--read-string "units" "in")
+                       (ess-plot--read-string "resolution/dpi" "300"))))
+  (let ((opts))
+    (and res (push (concat "plot.res=" res) opts))
+    (and units (push (concat "plot.units='" units "'") opts))
+    (and height (push (concat "plot.height=" height) opts))
+    (and width (push (concat "plot.width=" width) opts))
+    (when opts
+      (ess-send-string (ess-get-current-process)
+                       (format ".ess_plot_options(%s)" (string-join opts ", "))
+                       'nowait))))
+
 (provide 'ess-plot)
 
 ;;; ess-plot.el ends here
