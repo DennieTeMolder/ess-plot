@@ -103,7 +103,7 @@ the `default-value' of `ess-plot-dir' to ensure it is correctly recognized.")
   (file-name-directory (file-truename (or load-file-name buffer-file-name)))
   "Source directory containing ess-plot.el(c) and the dir/ folder.")
 
-(defvar ess-plot--file-last nil
+(defvar-local ess-plot--file-last nil
   "Most recent ESS plot file.")
 
 ;;* Predicate functions
@@ -258,15 +258,6 @@ Placed into `ess-presend-filter-functions' for R dialects."
    "\ntry(.ess_plot_show(), silent = TRUE)"
    str))
 
-(defun ess-plot--show-last (&optional show-placeholder)
-  "Display `ess-plot--file-last' in `ess-plot-window' creating it if needed.
-If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
-`ess-plot--file-last' is nil."
-  (if ess-plot--file-last
-      (ess-plot--display ess-plot--file-last)
-    (when show-placeholder
-      (ess-plot--display (ess-plot--placeholder)))))
-
 ;;* State management
 (defun ess-plot--load ()
   "Load the ess-plot library into `ess-local-process-name'."
@@ -314,7 +305,7 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
     (add-hook 'comint-preoutput-filter-functions #'ess-plot--output-filter nil 'local)
     (add-hook 'ess-presend-filter-functions #'ess-plot--replace-show-cookie nil 'local))
   (when ess-plot-window-show-on-startup
-    (ess-plot--show-last 'show-placeholder))
+    (ess-plot-display-last 'show-placeholder))
   (message "ESS-plot: started displaying plots for %s" ess-local-process-name)
   ess-plot-dir)
 
@@ -358,6 +349,24 @@ If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
   (ess-plot-cleanup-buffers 'kill-visible))
 
 ;;;###autoload
+(defun ess-plot-display-last (&optional show-placeholder)
+  "Display `ess-plot--file-last' in `ess-plot-window' creating it if needed.
+The value is looked up in `ess-get-current-process-buffer'.
+If SHOW-PLACEHOLDER is non-nil, `ess-plot--placeholder' is shown if
+`ess-plot--file-last' is nil."
+  (interactive "P")
+  (if-let* ((procs (mapcar #'car ess-process-name-list))
+            (ess-local-process-name
+             (or ess-local-process-name
+                 (completing-read "Show last plot for process: " procs nil 'require-match)))
+            (plot-file (ess-get-process-variable 'ess-plot--file-last)))
+      (ess-plot--display plot-file)
+    (if show-placeholder
+        (ess-plot--display (ess-plot--placeholder))
+      (when (called-interactively-p 'any)
+        (message "ESS-plot: no history for process '%s'" ess-local-process-name)))))
+
+;;;###autoload
 (defun ess-plot-window-here (&optional window no-kill)
   "Turn WINDOW into an `ess-plot-window'. Defaults to selected window.
 Unless NO-KILL is non-nil the other plot windows are killed."
@@ -366,7 +375,7 @@ Unless NO-KILL is non-nil the other plot windows are killed."
     (ess-plot-cleanup-buffers 'kill-visible))
   (with-selected-window (or window (selected-window))
     (let ((ess-plot-display-function #'pop-to-buffer-same-window))
-      (ess-plot--show-last 'show-placeholder))))
+      (ess-plot-display-last 'show-placeholder))))
 
 (provide 'ess-plot)
 
