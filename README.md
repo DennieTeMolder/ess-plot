@@ -38,19 +38,31 @@ And add the following to your `config.el`
 
 ## Usage
 When not using `ess-plot-on-startup-h`, call `M-x ess-plot-toggle` to start
-redirecting plots for the current process. Gg-plots should be rendered
-automatically, but base-R plots require calling `M-x ess-plot-show` or
-`dev.flush()` in R to render the plot to the window. Plots are displayed in PNG
-format thus plot history can be navigated using `image-mode` bindings (i.e.
-`image-previous-file`). Calling `M-x ess-plot-hide` hides the plot window until
-a new plot is generated. If the plot window was closed call `M-x ess-plot-show`
-to re-display the last plot. Calling `ess-plot-toggle` again stops plots from
-being redirected.
+redirecting plots for the current process. ESS-plot will start capturing all
+graphics but will require one of the following triggers to render the collected
+output:
 
-You can change the resolution and size of the next plot from inside of R. 
-The code below restores the default settings:
+  1. From Emacs: calling `M-x ess-plot-show`
+  2. From R: calling `.ess_plot_show()` (or `dev.flush()` if `ess-plot-mask-functions-p` is enabled)
+  3. Sending a `#@ess-plot-show` comment to the R process (e.g. via `M-x ess-eval-region`).
+
+When `ess-plot-mask-functions-p` is enabled (default), GG-plots should be
+rendered automatically without a trigger (unless they use special classes like
+Patchwork plots).
+
+Plots are displayed in PNG format thus plot history can be navigated using
+`image-mode` bindings (i.e. `image-previous-file`). Calling `M-x ess-plot-hide`
+hides the plot window until a new plot is generated. If the plot window was
+closed call `M-x ess-plot-display-last` to re-display the last plot. Calling
+`ess-plot-toggle` again stops plots from being redirected.
+
+You can change the resolution and size of the next plot by calling 
+`M-x ess-plot-options-set` from Emacs or calling `.ess_plot_options()` (or
+`options()` if `ess-plot-mask-functions-p` is enabled) from R. The code below
+restores the default settings:
+
 ```R
-options(
+.ess_plot_options(
   plot.width = 7,
   plot.height = 5,
   plot.units = "in",

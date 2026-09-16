@@ -4,7 +4,7 @@
 
 ;; Author: Dennie te Molder
 ;; Created: 30-8-2023
-;; Version: 0.2.2
+;; Version: 0.2.3
 ;; URL: https://github.com/DennieTeMolder/ess-plot
 ;; Package-Requires: ((emacs "26.1") (ess "18.10.1"))
 ;; Keywords: tools ESS R plot dedicated window
@@ -23,19 +23,34 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;; When not using `ess-plot-on-startup-h', call M-x `ess-plot-toggle' to start
-;; redirecting plots for the current process. Gg-plots should be rendered
-;; automatically, but base-R plots require calling M-x `ess-plot-show' or
-;; 'dev.flush()' in R to render the plot to the window. Plots are displayed in
-;; PNG format thus plot history can be navigated using `image-mode' bindings
-;; (i.e. `image-previous-file'). Calling M-x `ess-plot-hide' hides the plot
-;; window until a new plot is generated. If the plot window was closed call M-x
-;; `ess-plot-show' to re-display the last plot. Calling `ess-plot-toggle' again
-;; stops plots from being redirected. You can customise how the plots are
-;; displayed by changing `ess-plot-display-function'. To change the plot size
-;; and resolution modify options(plot.width, plot.height, plot.res, plot.units)
-;; inside of the R process.
+;; When not using `ess-plot-on-startup-h', call `M-x ess-plot-toggle' to start
+;; redirecting plots for the current process. ESS-plot will start capturing all
+;; graphics but will require one of the following triggers to render the collected
+;; output:
+;;   1. From Emacs: calling `M-x ess-plot-show'
+;;   2. From R: calling `.ess_plot_show()' (or `dev.flush()' if `ess-plot-mask-functions-p' is enabled)
+;;   3. Sending a `#@ess-plot-show' comment to the R process (e.g. via `M-x ess-eval-region').
+
+;; When `ess-plot-mask-functions-p' is enabled (default), GG-plots should be rendered
+;; automatically without a trigger (unless they use special classes like Patchwork plots).
 ;;
+;; Plots are displayed in PNG format thus plot history can be navigated using
+;; `image-mode' bindings (i.e. `image-previous-file'). Calling `M-x ess-plot-hide'
+;; hides the plot window until a new plot is generated. If the plot window was
+;; closed call `M-x ess-plot-display-last' to re-display the last plot. Calling
+;; `ess-plot-toggle' again stops plots from being redirected.
+;;
+;; You can change the resolution and size of the next plot by calling `M-x
+;; ess-plot-options-set' from Emacs or calling `.ess_plot_options()' (or
+;; `options()' if `ess-plot-mask-functions-p' is enabled) from R.
+;;
+;; You can control if `ess-plot-toggle' will immediately create the plot window or
+;; only when a new plot is rendered (default) by setting
+;; `ess-plot-window-show-on-startup' to `t' or `nil' respectively. You can
+;; customize how plot buffers are displayed by changing
+;; `ess-plot-display-function'. Setting it to `display-buffer' will ensure the plot
+;; window adheres more strictly to Emacs's window display rules.
+
 ;; Current limitations:
 ;;  - Only implemented for the R dialect (help is welcome for others)
 ;;
@@ -46,12 +61,8 @@
 ;;   be compiled with xwidget support and requires manual installation of a
 ;;   package into the R enviroment.
 ;;
-;; Development:
-;; TODO add Emacs cmd to change plot width/height
-;;
 ;;; Code:
 (require 'ess-inf)
-(require 'filenotify)
 
 ;;* Variables
 (defvar ess-plot-dir
