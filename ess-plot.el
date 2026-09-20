@@ -41,7 +41,7 @@
 ;; `ess-plot-toggle' again stops plots from being redirected.
 ;;
 ;; You can change the resolution and size of the next plot by calling `M-x
-;; ess-plot-options-set' from Emacs or calling `.ess_plot_options()' (or
+;; ess-plot-options' from Emacs or calling `.ess_plot_options()' (or
 ;; `options()' if `ess-plot-mask-functions-p' is enabled) from R.
 ;;
 ;; You can control if `ess-plot-toggle' will immediately create the plot window or

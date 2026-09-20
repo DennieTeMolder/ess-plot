@@ -57,7 +57,7 @@ closed call `M-x ess-plot-display-last` to re-display the last plot. Calling
 `ess-plot-toggle` again stops plots from being redirected.
 
 You can change the resolution and size of the next plot by calling 
-`M-x ess-plot-options-set` from Emacs or calling `.ess_plot_options()` (or
+`M-x ess-plot-options` from Emacs or calling `.ess_plot_options()` (or
 `options()` if `ess-plot-mask-functions-p` is enabled) from R. The code below
 restores the default settings:
 
@@ -71,11 +71,11 @@ restores the default settings:
 ```
 
 You can control if `ess-plot-toggle` will immediately create the plot window or
-only when a new plot is rendered (default) by setting
-`ess-plot-window-show-on-startup` to `t` or `nil` respectively. You can
-customize how plot buffers are displayed by changing
-`ess-plot-display-function`. Setting it to `display-buffer` will ensure the plot
-window adheres more strictly to Emacs's window display rules.
+only when a new plot is rendered by setting `ess-plot-window-show-on-startup` to
+`t` or `nil` (default) respectively. You can customize how plot buffers are
+displayed by changing `ess-plot-display-function`. Setting it to
+`display-buffer` will ensure the plot window adheres more strictly to Emacs's
+window display rules.
 
 ## Limitations
  - Only implemented for the R dialect (help is welcome for others)
