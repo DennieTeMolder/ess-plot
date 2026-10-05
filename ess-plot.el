@@ -6,7 +6,7 @@
 ;; Created: 30-8-2023
 ;; Version: 0.2.3
 ;; URL: https://github.com/DennieTeMolder/ess-plot
-;; Package-Requires: ((emacs "26.1") (ess "18.10.1"))
+;; Package-Requires: ((emacs "27.1") (ess "18.10.1"))
 ;; Keywords: tools ESS R plot dedicated window
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -37,7 +37,7 @@
 ;; Plots are displayed in PNG format thus plot history can be navigated using
 ;; `image-mode' bindings (i.e. `image-previous-file'). Calling `M-x ess-plot-hide'
 ;; hides the plot window until a new plot is generated. If the plot window was
-;; closed call `M-x ess-plot-display-last' to re-display the last plot. Calling
+;; closed, call `M-x ess-plot-display-last' to re-display the last plot. Calling
 ;; `ess-plot-toggle' again stops plots from being redirected.
 ;;
 ;; You can change the resolution and size of the next plot by calling `M-x
@@ -48,8 +48,7 @@
 ;; only when a new plot is rendered (default) by setting
 ;; `ess-plot-window-show-on-startup' to `t' or `nil' respectively. You can
 ;; customize how plot buffers are displayed by changing
-;; `ess-plot-display-function'. Setting it to `display-buffer' will ensure the plot
-;; window adheres more strictly to Emacs's window display rules.
+;; `ess-plot-display-function'.
 
 ;; Current limitations:
 ;;  - Only implemented for the R dialect (help is welcome for others)
@@ -217,18 +216,22 @@ Defaults to the first visible frame."
            (ess-plot--window-search-list)))
 
 (defun ess-plot-display-default (buf)
-  "Display BUF in `ess-plot-window', else split `ess-plot-process-window'.
-If both are nil `display-buffer' is used as fallback."
-  (let ((win (ess-plot-window)))
-    (and (not win)
-         (setq win (ess-plot-process-window))
-         (if (caar (window--subtree (window-parent win)))
-             (setq win (split-window-right nil win))
-           (setq win (split-window-below nil win))))
-    (if win
-        (with-selected-window win
-          (get-buffer-window (pop-to-buffer-same-window buf)))
-      (display-buffer buf))))
+  "Display BUF in `ess-plot-window', else split `ess-plot-process-window'."
+  (let (win)
+    (cond ((setq win (ess-plot-window))
+           (with-selected-window win
+             (display-buffer buf '(display-buffer-same-window))))
+          ((setq win (ess-plot-process-window))
+           (with-selected-window win
+             (let ((d (if (caar (window--subtree (window-parent win)))
+                            'right 'below))
+                   (w (/ (window-width win) 2))
+                   (h (/ (window-height win) 2)))
+               (display-buffer buf `(display-buffer-in-direction
+                                     (direction . ,d)
+                                     (window-width . ,w)
+                                     (window-height . ,h))))))
+          (t (display-buffer buf)))))
 
 (defun ess-plot--display (file-or-buf)
   "Display FILE-OR-BUF using `ess-plot-display-function'.
@@ -237,7 +240,7 @@ Also invokes `image-transform-fit-both'."
                 (find-file-noselect file-or-buf)))
          (win (funcall ess-plot-display-function buf)))
     (when (fboundp 'image-transform-fit-both)
-      (with-current-buffer buf
+      (with-selected-window win
         (when (eq major-mode 'image-mode)
           (image-transform-fit-both))))
     (ess-plot-cleanup-buffers)

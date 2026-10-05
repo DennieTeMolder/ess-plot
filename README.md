@@ -32,7 +32,7 @@ Add the following to your `package.el`:
 
 And add the following to your `config.el`
 ```emacs-lisp
-(use-package! ess-plot
+(use-package ess-plot
   :hook (ess-r-post-run . ess-plot-on-startup-h))
 ```
 
@@ -53,7 +53,7 @@ Patchwork plots).
 Plots are displayed in PNG format thus plot history can be navigated using
 `image-mode` bindings (i.e. `image-previous-file`). Calling `M-x ess-plot-hide`
 hides the plot window until a new plot is generated. If the plot window was
-closed call `M-x ess-plot-display-last` to re-display the last plot. Calling
+closed, call `M-x ess-plot-display-last` to re-display the last plot. Calling
 `ess-plot-toggle` again stops plots from being redirected.
 
 You can change the resolution and size of the next plot by calling 
@@ -73,9 +73,7 @@ restores the default settings:
 You can control if `ess-plot-toggle` will immediately create the plot window or
 only when a new plot is rendered by setting `ess-plot-window-show-on-startup` to
 `t` or `nil` (default) respectively. You can customize how plot buffers are
-displayed by changing `ess-plot-display-function`. Setting it to
-`display-buffer` will ensure the plot window adheres more strictly to Emacs's
-window display rules.
+displayed by changing `ess-plot-display-function`.
 
 ## Limitations
  - Only implemented for the R dialect (help is welcome for others)
